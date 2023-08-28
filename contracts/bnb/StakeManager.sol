@@ -102,7 +102,7 @@ contract StakeManager is Multisig, Manager {
 
     function withdrawRelayerFee(address _to) external onlyOwner {
         (bool success, ) = _to.call{value: address(this).balance}("");
-        require(success, "StakeManager: failed to withdraw");
+        require(success, "StakeManager: withdraw relayer fee failed");
     }
 
     // ------ delegation balancer
@@ -153,8 +153,8 @@ contract StakeManager is Multisig, Manager {
     }
 
     function stakeWithPool(address _poolAddress, uint256 _stakeAmount) public payable {
-        require(msg.value >= _stakeAmount + getStakeRelayerFee(), "StakeManager: fee not enough");
-        require(_stakeAmount >= minStakeAmount, "StakeManager: amount not enough");
+        require(msg.value >= _stakeAmount + getStakeRelayerFee(), "StakeManager: value not enough");
+        require(_stakeAmount >= minStakeAmount, "StakeManager: stake amount not enough");
         require(bondedPools.contains(_poolAddress), "StakeManager: pool not exist");
 
         uint256 lsdTokenAmount = (_stakeAmount * 1e18) / rate;
@@ -168,14 +168,14 @@ contract StakeManager is Multisig, Manager {
         (bool success, ) = _poolAddress.call{value: _stakeAmount}("");
         require(success, "StakeManager: transfer failed");
 
-        // mint rtoken
+        // mint lsdToken
         IERC20MintBurn(lsdToken).mint(msg.sender, lsdTokenAmount);
 
         emit Stake(msg.sender, _poolAddress, _stakeAmount, lsdTokenAmount);
     }
 
     function unstakeWithPool(address _poolAddress, uint256 _lsdTokenAmount) public payable {
-        require(_lsdTokenAmount > 0, "StakeManager: rtoken amount zero");
+        require(_lsdTokenAmount > 0, "StakeManager: lsd token amount zero");
         require(msg.value >= getUnstakeRelayerFee(), "StakeManager: fee not enough");
         require(bondedPools.contains(_poolAddress), "StakeManager: pool not exist");
         require(unstakesOfUser[msg.sender].length() <= UNSTAKE_TIMES_LIMIT, "StakeManager: unstake times limit");
@@ -187,7 +187,7 @@ contract StakeManager is Multisig, Manager {
         poolInfo.unbond = poolInfo.unbond + tokenAmount;
         poolInfo.active = poolInfo.active - tokenAmount;
 
-        // burn rtoken
+        // burn lsdToken
         IERC20MintBurn(lsdToken).burnFrom(msg.sender, _lsdTokenAmount);
 
         // unstake info
@@ -322,7 +322,7 @@ contract StakeManager is Multisig, Manager {
         uint256[] calldata _newRewardList,
         uint256[] calldata _latestRewardTimestampList
     ) private {
-        require(currentEra() >= _era, "StakeManager: calEra not match");
+        require(currentEra() >= _era, "StakeManager: era not match");
         require(
             _poolAddressList.length == bondedPools.length() &&
                 _poolAddressList.length == _newRewardList.length &&
@@ -339,7 +339,7 @@ contract StakeManager is Multisig, Manager {
             require(
                 _latestRewardTimestampList[i] >= latestRewardTimestampOf[poolAddress] &&
                     _latestRewardTimestampList[i] < block.timestamp,
-                "StakeManager: timestamp not match"
+                "StakeManager: reward timestamp not match"
             );
             PoolInfo memory poolInfo = poolInfoOf[poolAddress];
             require(poolInfo.era != latestEra, "StakeManager: duplicate pool");
@@ -405,22 +405,18 @@ contract StakeManager is Multisig, Manager {
 
         // cal protocol fee
         if (totalNewReward > 0) {
-            uint256 rTokenProtocolFee = (totalNewReward * protocolFeeCommission) / rate;
+            uint256 lsdTokenProtocolFee = (totalNewReward * protocolFeeCommission) / rate;
 
-            if (rTokenProtocolFee > 0) {
-                totalProtocolFee = totalProtocolFee + rTokenProtocolFee;
-                // mint rtoken
-                IERC20MintBurn(lsdToken).mint(address(this), rTokenProtocolFee);
+            if (lsdTokenProtocolFee > 0) {
+                totalProtocolFee = totalProtocolFee + lsdTokenProtocolFee;
+                // mint lsdToken
+                IERC20MintBurn(lsdToken).mint(address(this), lsdTokenProtocolFee);
             }
         }
 
         // update rate
         uint256 newRate = (totalNewActive * 1e18) / (IERC20(lsdToken).totalSupply());
-        uint256 rateChange = newRate > rate ? newRate - rate : rate - newRate;
-        require((rateChange * 1e18) / rate < rateChangeLimit, "StakeManager: rate change over limit");
-
-        rate = newRate;
-        eraRate[_era] = newRate;
+        _setEraRate(_era, newRate);
 
         emit ExecuteNewEra(_era, newRate);
     }

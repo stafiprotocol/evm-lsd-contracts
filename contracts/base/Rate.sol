@@ -34,4 +34,12 @@ abstract contract Rate is Ownable, IRateProvider {
 
         rateChangeLimit = _rateChangeLimit;
     }
+
+    function _setEraRate(uint256 _era, uint256 _rate) internal virtual {
+        uint256 rateChange = _rate > rate ? _rate - rate : rate - _rate;
+        require((rateChange * 1e18) / rate < rateChangeLimit, "Rate: rate change over limit");
+
+        rate = _rate;
+        eraRate[_era] = rate;
+    }
 }

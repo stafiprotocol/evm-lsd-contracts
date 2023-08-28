@@ -36,7 +36,7 @@ contract StakeManager is Manager {
 
     // init
     function init(address _lsdToken, address _stakeTokenAddress, address _poolAddress, uint256 _validatorId) public {
-        require(_stakeTokenAddress != address(0), "StakeManager: zero token address");
+        require(_stakeTokenAddress != address(0), "StakeManager: zero stake token address");
 
         _initManagerParams(_lsdToken, _poolAddress, 4, 5 * 1e14);
 
@@ -112,7 +112,7 @@ contract StakeManager is Manager {
     }
 
     function stakeWithPool(address _poolAddress, uint256 _stakeAmount) public {
-        require(_stakeAmount >= minStakeAmount, "StakeManager: amount not enough");
+        require(_stakeAmount >= minStakeAmount, "StakeManager: stake amount not enough");
         require(bondedPools.contains(_poolAddress), "StakeManager: pool not exist");
 
         uint256 lsdTokenAmount = (_stakeAmount * 1e18) / rate;
@@ -125,14 +125,14 @@ contract StakeManager is Manager {
         // transfer erc20 token
         IERC20(stakeTokenAddress).safeTransferFrom(msg.sender, _poolAddress, _stakeAmount);
 
-        // mint rtoken
+        // mint lsdToken
         IERC20MintBurn(lsdToken).mint(msg.sender, lsdTokenAmount);
 
         emit Stake(msg.sender, _poolAddress, _stakeAmount, lsdTokenAmount);
     }
 
     function unstakeWithPool(address _poolAddress, uint256 _lsdTokenAmount) public {
-        require(_lsdTokenAmount > 0, "StakeManager: rtoken amount zero");
+        require(_lsdTokenAmount > 0, "StakeManager: lsd token amount zero");
         require(bondedPools.contains(_poolAddress), "StakeManager: pool not exist");
         require(unstakesOfUser[msg.sender].length() <= UNSTAKE_TIMES_LIMIT, "StakeManager: unstake times limit");
 
@@ -143,7 +143,7 @@ contract StakeManager is Manager {
         poolInfo.unbond = poolInfo.unbond + tokenAmount;
         poolInfo.active = poolInfo.active - tokenAmount;
 
-        // burn rtoken
+        // burn lsdToken
         IERC20MintBurn(lsdToken).burnFrom(msg.sender, _lsdTokenAmount);
 
         // unstake info
@@ -196,7 +196,7 @@ contract StakeManager is Manager {
 
     function newEra() external {
         uint256 _era = latestEra + 1;
-        require(currentEra() >= _era, "StakeManager: calEra not match");
+        require(currentEra() >= _era, "StakeManager: era not match");
 
         // update era
         latestEra = _era;
@@ -265,6 +265,7 @@ contract StakeManager is Manager {
             newTotalActive = newTotalActive + newPoolActive;
 
             // update pool state
+            poolInfo.era = latestEra;
             poolInfo.active = newPoolActive;
             poolInfo.bond = 0;
             poolInfo.unbond = 0;
@@ -274,21 +275,17 @@ contract StakeManager is Manager {
 
         // cal protocol fee
         if (totalNewReward > 0) {
-            uint256 rTokenProtocolFee = (totalNewReward * protocolFeeCommission) / rate;
-            if (rTokenProtocolFee > 0) {
-                totalProtocolFee = totalProtocolFee + rTokenProtocolFee;
-                // mint rtoken
-                IERC20MintBurn(lsdToken).mint(address(this), rTokenProtocolFee);
+            uint256 lsdTokenProtocolFee = (totalNewReward * protocolFeeCommission) / rate;
+            if (lsdTokenProtocolFee > 0) {
+                totalProtocolFee = totalProtocolFee + lsdTokenProtocolFee;
+                // mint lsdToken
+                IERC20MintBurn(lsdToken).mint(address(this), lsdTokenProtocolFee);
             }
         }
 
         // update rate
         uint256 newRate = (newTotalActive * 1e18) / (IERC20(lsdToken).totalSupply());
-        uint256 rateChange = newRate > rate ? newRate - rate : rate - newRate;
-        require((rateChange * 1e18) / rate < rateChangeLimit, "StakeManager: rate change over limit");
-
-        rate = newRate;
-        eraRate[_era] = newRate;
+        _setEraRate(_era, newRate);
 
         emit ExecuteNewEra(_era, newRate);
     }
