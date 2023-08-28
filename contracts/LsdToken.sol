@@ -24,9 +24,9 @@ contract LsdToken is ERC20Burnable, IRateProvider {
     // Mint lsdToken
     // Only accepts calls from the StakeManager contract
     function mint(address _to, uint256 _amount) external {
-        require(msg.sender == stakeManagerAddress, "not manager");
+        require(msg.sender == stakeManagerAddress, "LsdToken: not manager");
         // Check lsdToken amount
-        require(_amount > 0, "Invalid token mint amount");
+        require(_amount > 0, "LsdToken: invalid token mint amount");
         // Update balance & supply
         _mint(_to, _amount);
     }

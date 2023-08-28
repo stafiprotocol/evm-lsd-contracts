@@ -36,7 +36,7 @@ contract StakeManager is Manager {
 
     // init
     function init(address _lsdToken, address _stakeTokenAddress, address _poolAddress, uint256 _validatorId) public {
-        require(_stakeTokenAddress != address(0), "zero token address");
+        require(_stakeTokenAddress != address(0), "StakeManager: zero token address");
 
         _initManagerParams(_lsdToken, _poolAddress, 4, 5 * 1e14);
 
@@ -58,16 +58,16 @@ contract StakeManager is Manager {
 
     function rmStakePool(address _poolAddress) external onlyOwner {
         PoolInfo memory poolInfo = poolInfoOf[_poolAddress];
-        require(poolInfo.active == 0 && poolInfo.bond == 0 && poolInfo.unbond == 0, "pool not empty");
+        require(poolInfo.active == 0 && poolInfo.bond == 0 && poolInfo.unbond == 0, "StakeManager: pool not empty");
 
         uint256[] memory validators = getValidatorIdsOf(_poolAddress);
         for (uint256 j = 0; j < validators.length; ++j) {
-            require(IMaticStakePool(_poolAddress).getDelegated(validators[j]) == 0, "delegate not empty");
+            require(IMaticStakePool(_poolAddress).getDelegated(validators[j]) == 0, "StakeManager: delegate not empty");
 
             validatorIdsOf[_poolAddress].remove(validators[j]);
         }
 
-        require(bondedPools.remove(_poolAddress), "pool not exist");
+        require(bondedPools.remove(_poolAddress), "StakeManager: pool not exist");
     }
 
     function approve(address _poolAddress, uint256 _amount) external onlyOwner {
@@ -82,9 +82,9 @@ contract StakeManager is Manager {
         uint256 _dstValidatorId,
         uint256 _amount
     ) external onlyDelegationBalancer {
-        require(validatorIdsOf[_poolAddress].contains(_srcValidatorId), "val not exist");
-        require(_srcValidatorId != _dstValidatorId, "val duplicate");
-        require(_amount > 0, "amount zero");
+        require(validatorIdsOf[_poolAddress].contains(_srcValidatorId), "StakeManager: val not exist");
+        require(_srcValidatorId != _dstValidatorId, "StakeManager: val duplicate");
+        require(_amount > 0, "StakeManager: amount zero");
 
         if (!validatorIdsOf[_poolAddress].contains(_dstValidatorId)) {
             validatorIdsOf[_poolAddress].add(_dstValidatorId);
@@ -112,8 +112,8 @@ contract StakeManager is Manager {
     }
 
     function stakeWithPool(address _poolAddress, uint256 _stakeAmount) public {
-        require(_stakeAmount >= minStakeAmount, "amount not enough");
-        require(bondedPools.contains(_poolAddress), "pool not exist");
+        require(_stakeAmount >= minStakeAmount, "StakeManager: amount not enough");
+        require(bondedPools.contains(_poolAddress), "StakeManager: pool not exist");
 
         uint256 rTokenAmount = (_stakeAmount * 1e18) / rate;
 
@@ -132,9 +132,9 @@ contract StakeManager is Manager {
     }
 
     function unstakeWithPool(address _poolAddress, uint256 _rTokenAmount) public {
-        require(_rTokenAmount > 0, "rtoken amount zero");
-        require(bondedPools.contains(_poolAddress), "pool not exist");
-        require(unstakesOfUser[msg.sender].length() <= UNSTAKE_TIMES_LIMIT, "unstake times limit");
+        require(_rTokenAmount > 0, "StakeManager: rtoken amount zero");
+        require(bondedPools.contains(_poolAddress), "StakeManager: pool not exist");
+        require(unstakesOfUser[msg.sender].length() <= UNSTAKE_TIMES_LIMIT, "StakeManager: unstake times limit");
 
         uint256 tokenAmount = (_rTokenAmount * rate) / 1e18;
 
@@ -179,7 +179,7 @@ contract StakeManager is Manager {
                 continue;
             }
 
-            require(unstakesOfUser[msg.sender].remove(unstakeIndex), "already withdrawed");
+            require(unstakesOfUser[msg.sender].remove(unstakeIndex), "StakeManager: already withdrawed");
 
             totalWithdrawAmount = totalWithdrawAmount + unstakeInfo.amount;
             emitUnstakeIndexList[i] = int256(unstakeIndex);
@@ -196,7 +196,7 @@ contract StakeManager is Manager {
 
     function newEra() external {
         uint256 _era = latestEra + 1;
-        require(currentEra() >= _era, "calEra not match");
+        require(currentEra() >= _era, "StakeManager: calEra not match");
 
         // update era
         latestEra = _era;
@@ -257,7 +257,7 @@ contract StakeManager is Manager {
                         emit Undelegate(poolAddress, validators[j], unbondAmount);
                     }
                 }
-                require(needUndelegate == 0, "undelegate not enough");
+                require(needUndelegate == 0, "StakeManager: undelegate not enough");
             }
 
             // cal total active
@@ -285,7 +285,7 @@ contract StakeManager is Manager {
         // update rate
         uint256 newRate = (newTotalActive * 1e18) / (IERC20(lsdToken).totalSupply());
         uint256 rateChange = newRate > rate ? newRate - rate : rate - newRate;
-        require((rateChange * 1e18) / rate < rateChangeLimit, "rate change over limit");
+        require((rateChange * 1e18) / rate < rateChangeLimit, "StakeManager: rate change over limit");
 
         rate = newRate;
         eraRate[_era] = newRate;
