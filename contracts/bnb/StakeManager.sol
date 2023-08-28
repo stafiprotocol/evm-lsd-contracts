@@ -26,12 +26,12 @@ contract StakeManager is Multisig, Manager {
     mapping(address => bool) public waitingRemovedValidator;
 
     // events
-    event Stake(address staker, address poolAddress, uint256 tokenAmount, uint256 rTokenAmount);
+    event Stake(address staker, address poolAddress, uint256 tokenAmount, uint256 lsdTokenAmount);
     event Unstake(
         address staker,
         address poolAddress,
         uint256 tokenAmount,
-        uint256 rTokenAmount,
+        uint256 lsdTokenAmount,
         uint256 unstakeIndex
     );
     event Withdraw(address staker, address poolAddress, uint256 tokenAmount, int256[] unstakeIndexList);
@@ -144,8 +144,8 @@ contract StakeManager is Multisig, Manager {
         stakeWithPool(bondedPools.at(0), _stakeAmount);
     }
 
-    function unstake(uint256 _rTokenAmount) external payable {
-        unstakeWithPool(bondedPools.at(0), _rTokenAmount);
+    function unstake(uint256 _lsdTokenAmount) external payable {
+        unstakeWithPool(bondedPools.at(0), _lsdTokenAmount);
     }
 
     function withdraw() external payable {
@@ -157,7 +157,7 @@ contract StakeManager is Multisig, Manager {
         require(_stakeAmount >= minStakeAmount, "StakeManager: amount not enough");
         require(bondedPools.contains(_poolAddress), "StakeManager: pool not exist");
 
-        uint256 rTokenAmount = (_stakeAmount * 1e18) / rate;
+        uint256 lsdTokenAmount = (_stakeAmount * 1e18) / rate;
 
         // update pool
         PoolInfo storage poolInfo = poolInfoOf[_poolAddress];
@@ -169,18 +169,18 @@ contract StakeManager is Multisig, Manager {
         require(success, "StakeManager: transfer failed");
 
         // mint rtoken
-        IERC20MintBurn(lsdToken).mint(msg.sender, rTokenAmount);
+        IERC20MintBurn(lsdToken).mint(msg.sender, lsdTokenAmount);
 
-        emit Stake(msg.sender, _poolAddress, _stakeAmount, rTokenAmount);
+        emit Stake(msg.sender, _poolAddress, _stakeAmount, lsdTokenAmount);
     }
 
-    function unstakeWithPool(address _poolAddress, uint256 _rTokenAmount) public payable {
-        require(_rTokenAmount > 0, "StakeManager: rtoken amount zero");
+    function unstakeWithPool(address _poolAddress, uint256 _lsdTokenAmount) public payable {
+        require(_lsdTokenAmount > 0, "StakeManager: rtoken amount zero");
         require(msg.value >= getUnstakeRelayerFee(), "StakeManager: fee not enough");
         require(bondedPools.contains(_poolAddress), "StakeManager: pool not exist");
         require(unstakesOfUser[msg.sender].length() <= UNSTAKE_TIMES_LIMIT, "StakeManager: unstake times limit");
 
-        uint256 tokenAmount = (_rTokenAmount * rate) / 1e18;
+        uint256 tokenAmount = (_lsdTokenAmount * rate) / 1e18;
 
         // update pool
         PoolInfo storage poolInfo = poolInfoOf[_poolAddress];
@@ -188,7 +188,7 @@ contract StakeManager is Multisig, Manager {
         poolInfo.active = poolInfo.active - tokenAmount;
 
         // burn rtoken
-        IERC20MintBurn(lsdToken).burnFrom(msg.sender, _rTokenAmount);
+        IERC20MintBurn(lsdToken).burnFrom(msg.sender, _lsdTokenAmount);
 
         // unstake info
         unstakeAtIndex[nextUnstakeIndex] = UnstakeInfo({
@@ -199,7 +199,7 @@ contract StakeManager is Multisig, Manager {
         });
         unstakesOfUser[msg.sender].add(nextUnstakeIndex);
 
-        emit Unstake(msg.sender, _poolAddress, tokenAmount, _rTokenAmount, nextUnstakeIndex);
+        emit Unstake(msg.sender, _poolAddress, tokenAmount, _lsdTokenAmount, nextUnstakeIndex);
 
         nextUnstakeIndex = nextUnstakeIndex + 1;
     }
