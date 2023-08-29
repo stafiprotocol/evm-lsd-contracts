@@ -1,7 +1,6 @@
 pragma solidity 0.8.19;
 // SPDX-License-Identifier: GPL-3.0-only
 
-import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "./interfaces/IBnbStakePool.sol";
 import "../interfaces/ILsdToken.sol";
@@ -9,7 +8,6 @@ import "./Multisig.sol";
 import "../base/Manager.sol";
 
 contract StakeManager is Multisig, Manager {
-    using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.UintSet;
 
@@ -416,7 +414,7 @@ contract StakeManager is Multisig, Manager {
         }
 
         // update rate
-        uint256 newRate = (totalNewActive * 1e18) / (IERC20(lsdToken).totalSupply());
+        uint256 newRate = (totalNewActive * 1e18) / (ERC20Burnable(lsdToken).totalSupply());
         _setEraRate(_era, newRate);
 
         emit ExecuteNewEra(_era, newRate);

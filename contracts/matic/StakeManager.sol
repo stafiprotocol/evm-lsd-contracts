@@ -285,7 +285,7 @@ contract StakeManager is Manager {
         }
 
         // update rate
-        uint256 newRate = (newTotalActive * 1e18) / (IERC20(lsdToken).totalSupply());
+        uint256 newRate = (newTotalActive * 1e18) / (ERC20Burnable(lsdToken).totalSupply());
         _setEraRate(_era, newRate);
 
         emit ExecuteNewEra(_era, newRate);
