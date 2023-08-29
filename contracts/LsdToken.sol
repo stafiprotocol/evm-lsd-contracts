@@ -3,9 +3,10 @@ pragma solidity 0.8.19;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import "./interfaces/ILsdToken.sol";
 import "./interfaces/IRateProvider.sol";
 
-contract LsdToken is ERC20Burnable, IRateProvider {
+contract LsdToken is ERC20Burnable, ILsdToken, IRateProvider {
     address public stakeManagerAddress;
 
     // Construct

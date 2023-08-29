@@ -2,8 +2,9 @@ pragma solidity 0.8.19;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "./interfaces/IBnbStakePool.sol";
-import "../interfaces/IERC20MintBurn.sol";
+import "../interfaces/ILsdToken.sol";
 import "./Multisig.sol";
 import "../base/Manager.sol";
 
@@ -169,7 +170,7 @@ contract StakeManager is Multisig, Manager {
         require(success, "StakeManager: transfer failed");
 
         // mint lsdToken
-        IERC20MintBurn(lsdToken).mint(msg.sender, lsdTokenAmount);
+        ILsdToken(lsdToken).mint(msg.sender, lsdTokenAmount);
 
         emit Stake(msg.sender, _poolAddress, _stakeAmount, lsdTokenAmount);
     }
@@ -188,7 +189,7 @@ contract StakeManager is Multisig, Manager {
         poolInfo.active = poolInfo.active - tokenAmount;
 
         // burn lsdToken
-        IERC20MintBurn(lsdToken).burnFrom(msg.sender, _lsdTokenAmount);
+        ERC20Burnable(lsdToken).burnFrom(msg.sender, _lsdTokenAmount);
 
         // unstake info
         unstakeAtIndex[nextUnstakeIndex] = UnstakeInfo({
@@ -410,7 +411,7 @@ contract StakeManager is Multisig, Manager {
             if (lsdTokenProtocolFee > 0) {
                 totalProtocolFee = totalProtocolFee + lsdTokenProtocolFee;
                 // mint lsdToken
-                IERC20MintBurn(lsdToken).mint(address(this), lsdTokenProtocolFee);
+                ILsdToken(lsdToken).mint(address(this), lsdTokenProtocolFee);
             }
         }
 

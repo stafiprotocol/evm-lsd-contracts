@@ -3,8 +3,9 @@ pragma solidity 0.8.19;
 
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "./interfaces/IMaticStakePool.sol";
-import "../interfaces/IERC20MintBurn.sol";
+import "../interfaces/ILsdToken.sol";
 import "../base/Manager.sol";
 
 contract StakeManager is Manager {
@@ -126,7 +127,7 @@ contract StakeManager is Manager {
         IERC20(stakeTokenAddress).safeTransferFrom(msg.sender, _poolAddress, _stakeAmount);
 
         // mint lsdToken
-        IERC20MintBurn(lsdToken).mint(msg.sender, lsdTokenAmount);
+        ILsdToken(lsdToken).mint(msg.sender, lsdTokenAmount);
 
         emit Stake(msg.sender, _poolAddress, _stakeAmount, lsdTokenAmount);
     }
@@ -144,7 +145,7 @@ contract StakeManager is Manager {
         poolInfo.active = poolInfo.active - tokenAmount;
 
         // burn lsdToken
-        IERC20MintBurn(lsdToken).burnFrom(msg.sender, _lsdTokenAmount);
+        ERC20Burnable(lsdToken).burnFrom(msg.sender, _lsdTokenAmount);
 
         // unstake info
         uint256 willUseUnstakeIndex = nextUnstakeIndex;
@@ -279,7 +280,7 @@ contract StakeManager is Manager {
             if (lsdTokenProtocolFee > 0) {
                 totalProtocolFee = totalProtocolFee + lsdTokenProtocolFee;
                 // mint lsdToken
-                IERC20MintBurn(lsdToken).mint(address(this), lsdTokenProtocolFee);
+                ILsdToken(lsdToken).mint(address(this), lsdTokenProtocolFee);
             }
         }
 
