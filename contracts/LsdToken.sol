@@ -7,6 +7,10 @@ import "./interfaces/ILsdToken.sol";
 import "./interfaces/IRateProvider.sol";
 
 contract LsdToken is ERC20Burnable, ILsdToken, IRateProvider {
+    // Custom errors to provide more descriptive revert messages.
+    error NotStakeManager();
+    error ZeroMintAmount();
+
     address public stakeManagerAddress;
 
     // Construct
@@ -18,16 +22,16 @@ contract LsdToken is ERC20Burnable, ILsdToken, IRateProvider {
         stakeManagerAddress = _stakeManagerAddress;
     }
 
-    function getRate() external view override returns (uint256) {
+    function getRate() public view override returns (uint256) {
         return IRateProvider(stakeManagerAddress).getRate();
     }
 
     // Mint lsdToken
     // Only accepts calls from the StakeManager contract
-    function mint(address _to, uint256 _amount) external {
-        require(msg.sender == stakeManagerAddress, "LsdToken: not manager");
+    function mint(address _to, uint256 _amount) public override {
+        if (stakeManagerAddress != msg.sender) revert NotStakeManager();
         // Check lsdToken amount
-        require(_amount > 0, "LsdToken: invalid token mint amount");
+        if (_amount == 0) revert ZeroMintAmount();
         // Update balance & supply
         _mint(_to, _amount);
     }

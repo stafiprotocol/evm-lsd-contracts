@@ -7,7 +7,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "../base/Ownable.sol";
 
 contract Multisig is Ownable {
-     // Custom errors to provide more descriptive revert messages.
+    // Custom errors to provide more descriptive revert messages.
     error NotVoter();
     error InvalidThreshold();
     error TooManyVoters();
