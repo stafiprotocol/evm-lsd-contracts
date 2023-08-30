@@ -8,6 +8,29 @@ import "./Multisig.sol";
 import "../base/Manager.sol";
 
 contract StakeManager is Multisig, Manager {
+    // Custom errors to provide more descriptive revert messages.
+    error PoolNotEmpty();
+    error DelegateNotEmpty();
+    error PendingDelegateNotEmpty();
+    error PoolNotExist(address poolAddress);
+    error FailedToWithdrawRelayerFee();
+    error ValidatorNotExist();
+    error ValidatorDuplicated();
+    error ZeroRedelegateAmount();
+    error PendingRedelegationExist();
+    error NotEnoughStakeValue();
+    error NotEnoughStakeAmount();
+    error FailedToTransferBnb();
+    error ZeroUnstakeAmount();
+    error NotEnoughFee();
+    error UnstakeTimesExceedLimit();
+    error AlreadyWithdrawed();
+    error RequestInFly();
+    error EraNotMatch();
+    error ListLengthNotMatch();
+    error RewardTimestampNotMatch();
+    error PoolDuplicated(address poolAddress);
+
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.UintSet;
 
@@ -47,7 +70,7 @@ contract StakeManager is Multisig, Manager {
         address _poolAddress,
         address _validator
     ) external {
-        require(_validator != address(0), "StakeManager: zero validator address");
+        if (_validator == address(0)) revert NotValidAddress();
 
         initMultisig(_initialVoters, _initialThreshold);
         _initManagerParams(_lsdToken, _poolAddress, 16, 3 * 1e14);
@@ -79,20 +102,16 @@ contract StakeManager is Multisig, Manager {
 
     function rmStakePool(address _poolAddress) external onlyOwner {
         PoolInfo memory poolInfo = poolInfoOf[_poolAddress];
-        require(poolInfo.active == 0 && poolInfo.bond == 0 && poolInfo.unbond == 0, "StakeManager: pool not empty");
-        require(IBnbStakePool(_poolAddress).getTotalDelegated() == 0, "StakeManager: delegate not empty");
-        require(
-            pendingDelegateOf[_poolAddress] == 0 &&
+        if (!(poolInfo.active == 0 && poolInfo.bond == 0 && poolInfo.unbond == 0)) revert PoolNotEmpty();
+        if (IBnbStakePool(_poolAddress).getTotalDelegated() != 0) revert DelegateNotEmpty();
+        if (!(pendingDelegateOf[_poolAddress] == 0 &&
                 pendingUndelegateOf[_poolAddress] == 0 &&
-                undistributedRewardOf[_poolAddress] == 0,
-            "StakeManager: pending not empty"
-        );
-
-        require(bondedPools.remove(_poolAddress), "StakeManager: pool not exist");
+                undistributedRewardOf[_poolAddress] == 0)) revert PendingDelegateNotEmpty();
+        if (!bondedPools.remove(_poolAddress)) revert PoolNotExist(_poolAddress);
     }
 
     function rmValidator(address _poolAddress, address _validator) external onlyOwner {
-        require(IBnbStakePool(_poolAddress).getDelegated(_validator) == 0, "StakeManager: delegate not empty");
+        if (IBnbStakePool(_poolAddress).getDelegated(_validator) != 0) revert DelegateNotEmpty();
 
         validatorsOf[_poolAddress].remove(_validator);
         delegatedOfValidator[_poolAddress][_validator] = 0;
@@ -101,7 +120,7 @@ contract StakeManager is Multisig, Manager {
 
     function withdrawRelayerFee(address _to) external onlyOwner {
         (bool success, ) = _to.call{value: address(this).balance}("");
-        require(success, "StakeManager: withdraw relayer fee failed");
+        if (!success) revert FailedToWithdrawRelayerFee();
     }
 
     // ------ delegation balancer
@@ -112,18 +131,17 @@ contract StakeManager is Multisig, Manager {
         address _dstValidator,
         uint256 _amount
     ) external onlyDelegationBalancer {
-        require(validatorsOf[_poolAddress].contains(_srcValidator), "StakeManager: val not exist");
-        require(_srcValidator != _dstValidator, "StakeManager: val duplicate");
+        if (!validatorsOf[_poolAddress].contains(_srcValidator)) revert ValidatorNotExist();
+        if (_srcValidator == _dstValidator) revert ValidatorDuplicated();
+        if (_amount == 0) revert ZeroRedelegateAmount();
 
         if (!validatorsOf[_poolAddress].contains(_dstValidator)) {
             validatorsOf[_poolAddress].add(_dstValidator);
         }
 
-        require(
-            block.timestamp >= IBnbStakePool(_poolAddress).getPendingRedelegateTime(_srcValidator, _dstValidator) &&
-                block.timestamp >= IBnbStakePool(_poolAddress).getPendingRedelegateTime(_dstValidator, _srcValidator),
-            "StakeManager: pending redelegation exist"
-        );
+        if (!(block.timestamp >= IBnbStakePool(_poolAddress).getPendingRedelegateTime(_srcValidator, _dstValidator) &&
+                block.timestamp >= IBnbStakePool(_poolAddress).getPendingRedelegateTime(_dstValidator, _srcValidator)))
+            revert PendingRedelegationExist();
 
         _checkAndRepairDelegated(_poolAddress);
 
@@ -152,9 +170,9 @@ contract StakeManager is Multisig, Manager {
     }
 
     function stakeWithPool(address _poolAddress, uint256 _stakeAmount) public payable {
-        require(msg.value >= _stakeAmount + getStakeRelayerFee(), "StakeManager: value not enough");
-        require(_stakeAmount >= minStakeAmount, "StakeManager: stake amount not enough");
-        require(bondedPools.contains(_poolAddress), "StakeManager: pool not exist");
+        if (msg.value < _stakeAmount + getStakeRelayerFee()) revert NotEnoughStakeValue();
+        if (_stakeAmount < minStakeAmount) revert NotEnoughStakeAmount();
+        if (!bondedPools.contains(_poolAddress)) revert PoolNotExist(_poolAddress);
 
         uint256 lsdTokenAmount = (_stakeAmount * 1e18) / rate;
 
@@ -165,7 +183,7 @@ contract StakeManager is Multisig, Manager {
 
         // transfer token
         (bool success, ) = _poolAddress.call{value: _stakeAmount}("");
-        require(success, "StakeManager: transfer failed");
+        if (!success) revert FailedToTransferBnb();
 
         // mint lsdToken
         ILsdToken(lsdToken).mint(msg.sender, lsdTokenAmount);
@@ -174,10 +192,10 @@ contract StakeManager is Multisig, Manager {
     }
 
     function unstakeWithPool(address _poolAddress, uint256 _lsdTokenAmount) public payable {
-        require(_lsdTokenAmount > 0, "StakeManager: lsd token amount zero");
-        require(msg.value >= getUnstakeRelayerFee(), "StakeManager: fee not enough");
-        require(bondedPools.contains(_poolAddress), "StakeManager: pool not exist");
-        require(unstakesOfUser[msg.sender].length() <= UNSTAKE_TIMES_LIMIT, "StakeManager: unstake times limit");
+        if (_lsdTokenAmount == 0) revert ZeroUnstakeAmount();
+        if (msg.value < getUnstakeRelayerFee()) revert NotEnoughFee();
+        if (!bondedPools.contains(_poolAddress)) revert PoolNotExist(_poolAddress);
+        if (unstakesOfUser[msg.sender].length() >= UNSTAKE_TIMES_LIMIT) revert UnstakeTimesExceedLimit();
 
         uint256 tokenAmount = (_lsdTokenAmount * rate) / 1e18;
 
@@ -204,7 +222,7 @@ contract StakeManager is Multisig, Manager {
     }
 
     function withdrawWithPool(address _poolAddress) public payable {
-        require(msg.value >= CROSS_DISTRIBUTE_RELAY_FEE, "StakeManager: fee not enough");
+        if (msg.value < CROSS_DISTRIBUTE_RELAY_FEE) revert NotEnoughFee();
 
         uint256 totalWithdrawAmount;
         uint256 length = unstakesOfUser[msg.sender].length();
@@ -223,7 +241,7 @@ contract StakeManager is Multisig, Manager {
                 continue;
             }
 
-            require(unstakesOfUser[msg.sender].remove(unstakeIndex), "StakeManager: already withdrawed");
+            if (!unstakesOfUser[msg.sender].remove(unstakeIndex)) revert AlreadyWithdrawed();
 
             totalWithdrawAmount = totalWithdrawAmount + unstakeInfo.amount;
             emitUnstakeIndexList[i] = int256(unstakeIndex);
@@ -238,8 +256,8 @@ contract StakeManager is Multisig, Manager {
 
     // ----- permissionless
 
-    function settle(address _poolAddress) public {
-        require(bondedPools.contains(_poolAddress), "StakeManager: pool not exist");
+    function settle(address _poolAddress) external {
+        if (!bondedPools.contains(_poolAddress)) revert PoolNotExist(_poolAddress);
         _checkAndRepairDelegated(_poolAddress);
 
         // claim undelegated
@@ -291,7 +309,7 @@ contract StakeManager is Multisig, Manager {
 
     function _checkAndRepairDelegated(address _poolAddress) private {
         uint256[3] memory requestInFly = IBnbStakePool(_poolAddress).getRequestInFly();
-        require(requestInFly[0] == 0 && requestInFly[1] == 0 && requestInFly[2] == 0, "StakeManager: request in fly");
+        if (!(requestInFly[0] == 0 && requestInFly[1] == 0 && requestInFly[2] == 0)) revert RequestInFly();
 
         uint256 valLength = validatorsOf[_poolAddress].length();
         for (uint256 i = 0; i < valLength; ++i) {
@@ -321,13 +339,10 @@ contract StakeManager is Multisig, Manager {
         uint256[] calldata _newRewardList,
         uint256[] calldata _latestRewardTimestampList
     ) private {
-        require(currentEra() >= _era, "StakeManager: era not match");
-        require(
-            _poolAddressList.length == bondedPools.length() &&
+        if (currentEra() < _era) revert EraNotMatch();
+        if (!(_poolAddressList.length == bondedPools.length() &&
                 _poolAddressList.length == _newRewardList.length &&
-                _poolAddressList.length == _latestRewardTimestampList.length,
-            "StakeManager: length not match"
-        );
+                _poolAddressList.length == _latestRewardTimestampList.length)) revert ListLengthNotMatch();
         // update era
         latestEra = _era;
         // update pool info
@@ -335,14 +350,12 @@ contract StakeManager is Multisig, Manager {
         uint256 totalNewActive;
         for (uint256 i = 0; i < _poolAddressList.length; ++i) {
             address poolAddress = _poolAddressList[i];
-            require(
-                _latestRewardTimestampList[i] >= latestRewardTimestampOf[poolAddress] &&
-                    _latestRewardTimestampList[i] < block.timestamp,
-                "StakeManager: reward timestamp not match"
-            );
+            if (!(_latestRewardTimestampList[i] >= latestRewardTimestampOf[poolAddress] &&
+                    _latestRewardTimestampList[i] < block.timestamp)) revert RewardTimestampNotMatch();
+
             PoolInfo memory poolInfo = poolInfoOf[poolAddress];
-            require(poolInfo.era != latestEra, "StakeManager: duplicate pool");
-            require(bondedPools.contains(poolAddress), "StakeManager: pool not exist");
+            if (poolInfo.era == latestEra) revert PoolDuplicated(poolAddress);
+            if (!bondedPools.contains(poolAddress)) revert PoolNotExist(poolAddress);
 
             _checkAndRepairDelegated(poolAddress);
 

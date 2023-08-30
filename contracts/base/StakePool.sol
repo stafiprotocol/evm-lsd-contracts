@@ -6,6 +6,9 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 import "./Ownable.sol";
 
 abstract contract StakePool is Ownable {
+    // Custom errors to provide more descriptive revert messages.
+    error PoolExist(address poolAddress);
+
     using EnumerableSet for EnumerableSet.AddressSet;
 
     struct PoolInfo {
@@ -28,21 +31,21 @@ abstract contract StakePool is Ownable {
         return pools;
     }
 
-    function addStakePool(address _poolAddress) public virtual onlyOwner {
+    function addStakePool(address _poolAddress) external virtual onlyOwner {
         _addStakePool(_poolAddress);
     }
 
-    function setMinStakeAmount(uint256 _minStakeAmount) public virtual onlyOwner {
+    function setMinStakeAmount(uint256 _minStakeAmount) external virtual onlyOwner {
         minStakeAmount = _minStakeAmount;
     }
 
     function _initStakePoolParams(address _poolAddress) internal virtual {
-        require(bondedPools.length() == 0, "StakePool: already init");
+        if (bondedPools.length() > 0) revert AlreadyInitialized();
         _addStakePool(_poolAddress);
     }
 
     function _addStakePool(address _poolAddress) internal virtual {
-        require(_poolAddress != address(0), "zero pool address");
-        require(bondedPools.add(_poolAddress), "pool exist");
+        if (_poolAddress == address(0)) revert NotValidAddress();
+        if (!bondedPools.add(_poolAddress)) revert PoolExist(_poolAddress);
     }
 }

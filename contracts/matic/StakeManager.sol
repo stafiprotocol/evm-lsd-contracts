@@ -9,6 +9,21 @@ import "../interfaces/ILsdToken.sol";
 import "../base/Manager.sol";
 
 contract StakeManager is Manager {
+    // Custom errors to provide more descriptive revert messages.
+    error ZeroStakeTokenAddress();
+    error PoolNotEmpty();
+    error DelegateNotEmpty();
+    error PoolNotExist(address poolAddress);
+    error ValidatorNotExist();
+    error ValidatorDuplicated();
+    error ZeroRedelegateAmount();
+    error NotEnoughStakeAmount();
+    error ZeroUnstakeAmount();
+    error UnstakeTimesExceedLimit();
+    error AlreadyWithdrawed();
+    error EraNotMatch();
+    error NotEnoughAmountToUndelegate();
+
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.UintSet;
@@ -36,8 +51,8 @@ contract StakeManager is Manager {
     event NewClaimedNonce(address pool, uint256 validator, uint256 nonce);
 
     // init
-    function init(address _lsdToken, address _stakeTokenAddress, address _poolAddress, uint256 _validatorId) public {
-        require(_stakeTokenAddress != address(0), "StakeManager: zero stake token address");
+    function init(address _lsdToken, address _stakeTokenAddress, address _poolAddress, uint256 _validatorId) external {
+        if (_stakeTokenAddress == address(0)) revert ZeroStakeTokenAddress();
 
         _initManagerParams(_lsdToken, _poolAddress, 4, 5 * 1e14);
 
@@ -59,16 +74,16 @@ contract StakeManager is Manager {
 
     function rmStakePool(address _poolAddress) external onlyOwner {
         PoolInfo memory poolInfo = poolInfoOf[_poolAddress];
-        require(poolInfo.active == 0 && poolInfo.bond == 0 && poolInfo.unbond == 0, "StakeManager: pool not empty");
+        if (!(poolInfo.active == 0 && poolInfo.bond == 0 && poolInfo.unbond == 0)) revert PoolNotEmpty();
 
         uint256[] memory validators = getValidatorIdsOf(_poolAddress);
         for (uint256 j = 0; j < validators.length; ++j) {
-            require(IMaticStakePool(_poolAddress).getDelegated(validators[j]) == 0, "StakeManager: delegate not empty");
+            if (IMaticStakePool(_poolAddress).getDelegated(validators[j]) != 0) revert DelegateNotEmpty();
 
             validatorIdsOf[_poolAddress].remove(validators[j]);
         }
 
-        require(bondedPools.remove(_poolAddress), "StakeManager: pool not exist");
+        if (!bondedPools.remove(_poolAddress)) revert PoolNotExist(_poolAddress);
     }
 
     function approve(address _poolAddress, uint256 _amount) external onlyOwner {
@@ -83,9 +98,9 @@ contract StakeManager is Manager {
         uint256 _dstValidatorId,
         uint256 _amount
     ) external onlyDelegationBalancer {
-        require(validatorIdsOf[_poolAddress].contains(_srcValidatorId), "StakeManager: val not exist");
-        require(_srcValidatorId != _dstValidatorId, "StakeManager: val duplicate");
-        require(_amount > 0, "StakeManager: amount zero");
+        if (!validatorIdsOf[_poolAddress].contains(_srcValidatorId)) revert ValidatorNotExist();
+        if (_srcValidatorId == _dstValidatorId) revert ValidatorDuplicated();
+        if (_amount == 0) revert ZeroRedelegateAmount();
 
         if (!validatorIdsOf[_poolAddress].contains(_dstValidatorId)) {
             validatorIdsOf[_poolAddress].add(_dstValidatorId);
@@ -113,8 +128,8 @@ contract StakeManager is Manager {
     }
 
     function stakeWithPool(address _poolAddress, uint256 _stakeAmount) public {
-        require(_stakeAmount >= minStakeAmount, "StakeManager: stake amount not enough");
-        require(bondedPools.contains(_poolAddress), "StakeManager: pool not exist");
+        if (_stakeAmount < minStakeAmount) revert NotEnoughStakeAmount();
+        if (!bondedPools.contains(_poolAddress)) revert PoolNotExist(_poolAddress);
 
         uint256 lsdTokenAmount = (_stakeAmount * 1e18) / rate;
 
@@ -133,9 +148,9 @@ contract StakeManager is Manager {
     }
 
     function unstakeWithPool(address _poolAddress, uint256 _lsdTokenAmount) public {
-        require(_lsdTokenAmount > 0, "StakeManager: lsd token amount zero");
-        require(bondedPools.contains(_poolAddress), "StakeManager: pool not exist");
-        require(unstakesOfUser[msg.sender].length() <= UNSTAKE_TIMES_LIMIT, "StakeManager: unstake times limit");
+        if (_lsdTokenAmount == 0) revert ZeroUnstakeAmount();
+        if (!bondedPools.contains(_poolAddress)) revert PoolNotExist(_poolAddress);
+        if (unstakesOfUser[msg.sender].length() >= UNSTAKE_TIMES_LIMIT) revert UnstakeTimesExceedLimit();
 
         uint256 tokenAmount = (_lsdTokenAmount * rate) / 1e18;
 
@@ -180,7 +195,7 @@ contract StakeManager is Manager {
                 continue;
             }
 
-            require(unstakesOfUser[msg.sender].remove(unstakeIndex), "StakeManager: already withdrawed");
+            if (!unstakesOfUser[msg.sender].remove(unstakeIndex)) revert AlreadyWithdrawed();
 
             totalWithdrawAmount = totalWithdrawAmount + unstakeInfo.amount;
             emitUnstakeIndexList[i] = int256(unstakeIndex);
@@ -197,7 +212,7 @@ contract StakeManager is Manager {
 
     function newEra() external {
         uint256 _era = latestEra + 1;
-        require(currentEra() >= _era, "StakeManager: era not match");
+        if (currentEra() < _era) revert EraNotMatch();
 
         // update era
         latestEra = _era;
@@ -258,7 +273,7 @@ contract StakeManager is Manager {
                         emit Undelegate(poolAddress, validators[j], unbondAmount);
                     }
                 }
-                require(needUndelegate == 0, "StakeManager: undelegate not enough");
+                if (needUndelegate != 0) revert NotEnoughAmountToUndelegate();
             }
 
             // cal total active

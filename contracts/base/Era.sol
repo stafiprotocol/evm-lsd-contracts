@@ -5,6 +5,11 @@ pragma solidity 0.8.19;
 import "./Ownable.sol";
 
 abstract contract Era is Ownable {
+    // Custom errors to provide more descriptive revert messages.
+    error LessThanMinEraSeconds(uint256 eraSeconds);
+    error GreaterThanMaxEraSeconds(uint256 eraSeconds);
+    error WrongEraParameters(uint256 eraSeconds, uint256 eraOffset);
+
     uint256 public constant MIN_ERA_SECONDS = 3600;
     uint256 public constant MAX_ERA_SECONDS = 172800;
 
@@ -17,18 +22,18 @@ abstract contract Era is Ownable {
         return block.timestamp / eraSeconds - eraOffset;
     }
 
-    function setEraParams(uint256 _eraSeconds, uint256 _eraOffset) public virtual onlyOwner {
-        require(eraSeconds != 0, "Era: not init");
-        require(_eraSeconds >= MIN_ERA_SECONDS, "Era: min era seconds limit");
-        require(_eraSeconds <= MAX_ERA_SECONDS, "Era: max era seconds limit");
-        require(currentEra() == block.timestamp / _eraSeconds - _eraOffset, "Era: wrong era parameters");
+    function setEraParams(uint256 _eraSeconds, uint256 _eraOffset) external virtual onlyOwner {
+        if (eraSeconds == 0) revert NotInitialized();
+        if (_eraSeconds < MIN_ERA_SECONDS) revert LessThanMinEraSeconds(_eraSeconds);
+        if (_eraSeconds > MAX_ERA_SECONDS) revert GreaterThanMaxEraSeconds(_eraSeconds);
+        if (currentEra() != block.timestamp / _eraSeconds - _eraOffset) revert WrongEraParameters(_eraSeconds, _eraOffset);
 
         eraSeconds = _eraSeconds;
         eraOffset = _eraOffset;
     }
 
     function _initEraParams() internal virtual {
-        require(eraSeconds == 0, "Era: already init");
+        if (eraSeconds != 0) revert AlreadyInitialized();
 
         eraSeconds = 86400;
         eraOffset = block.timestamp / eraSeconds;

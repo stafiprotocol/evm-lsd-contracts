@@ -6,6 +6,10 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 import "./Ownable.sol";
 
 abstract contract UnstakePool is Ownable {
+    // Custom errors to provide more descriptive revert messages.
+    error ZeroUnbondingDuration();
+    error GreaterThanMaxUnbondingDuration(uint256 unbondingDuration);
+
     using EnumerableSet for EnumerableSet.UintSet;
 
     struct UnstakeInfo {
@@ -35,18 +39,18 @@ abstract contract UnstakePool is Ownable {
         return unstakeIndexList;
     }
 
-    function setUnbondingDuration(uint256 _unbondingDuration) public virtual onlyOwner {
+    function setUnbondingDuration(uint256 _unbondingDuration) external virtual onlyOwner {
         _setUnbondingDuration(_unbondingDuration);
     }
 
     function _initUnstakeParams(uint256 _unbondingDuration) internal virtual {
-        require(_unbondingDuration == 0, "Unstake: already init");
+        if (_unbondingDuration != 0) revert AlreadyInitialized();
         _setUnbondingDuration(_unbondingDuration);
     }
 
     function _setUnbondingDuration(uint256 _unbondingDuration) internal virtual {
-        require(_unbondingDuration > 0, "Unstake: zero unbonding duration");
-        require(_unbondingDuration <= MAX_UNBONDING_DURATION, "Unstake: max unbonding duration limit");
+        if (_unbondingDuration == 0) revert ZeroUnbondingDuration();
+        if (_unbondingDuration > MAX_UNBONDING_DURATION) revert GreaterThanMaxUnbondingDuration(_unbondingDuration);
 
         unbondingDuration = _unbondingDuration;
         emit SetUnbondingDuration(_unbondingDuration);

@@ -9,20 +9,26 @@ import "./interfaces/IGovStakeManager.sol";
 import "./interfaces/IMaticStakePool.sol";
 
 contract StakePool is IMaticStakePool {
+    // Custom errors to provide more descriptive revert messages.
+    error AlreadyInitialized();
+    error NotStakeManager();
+    error NotValidAddress();
+    error FailedToWithdrawForStaker();
+
     using SafeERC20 for IERC20;
 
     address public stakeManagerAddress;
     address public govStakeManagerAddress;
 
     modifier onlyStakeManager() {
-        require(msg.sender == stakeManagerAddress, "StakePool: only stakeManager");
+        if (stakeManagerAddress != msg.sender) revert NotStakeManager();
         _;
     }
 
     function init(address _stakeManagerAddress, address _govStakeManagerAddress) external {
-        require(stakeManagerAddress == address(0), "StakePool: already init");
-        require(_stakeManagerAddress != address(0), "StakePool: zero stake manager address");
-        require(_govStakeManagerAddress != address(0), "StakePool: zero gov stake manager address");
+        if (stakeManagerAddress != address(0)) revert AlreadyInitialized();
+        if (_stakeManagerAddress == address(0)) revert NotValidAddress();
+        if (_govStakeManagerAddress == address(0)) revert NotValidAddress();
 
         stakeManagerAddress = _stakeManagerAddress;
         govStakeManagerAddress = _govStakeManagerAddress;

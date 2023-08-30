@@ -7,6 +7,14 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "../base/Ownable.sol";
 
 contract Multisig is Ownable {
+     // Custom errors to provide more descriptive revert messages.
+    error NotVoter();
+    error InvalidThreshold();
+    error TooManyVoters();
+    error NotEnoughVoters();
+    error ProposalAlreadyExecuted(bytes32 proposalId);
+    error AlreadyVoted();
+
     using SafeCast for *;
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -30,14 +38,15 @@ contract Multisig is Ownable {
     event ProposalExecuted(bytes32 indexed proposalId);
 
     modifier onlyVoter() {
-        require(voters.contains(msg.sender));
+        if (!voters.contains(msg.sender)) revert NotVoter();
         _;
     }
 
     function initMultisig(address[] memory _voters, uint256 _initialThreshold) public {
-        require(threshold == 0, "already initizlized");
-        require(_voters.length >= _initialThreshold && _initialThreshold > _voters.length / 2, "invalid threshold");
-        require(_voters.length <= 16, "too much voters");
+        if (threshold != 0) revert AlreadyInitialized();
+        if (!(_voters.length >= _initialThreshold && _initialThreshold > _voters.length / 2))
+            revert InvalidThreshold();
+        if (_voters.length > 16) revert TooManyVoters();
 
         threshold = _initialThreshold.toUint8();
         uint256 initialVoterCount = _voters.length;
@@ -48,20 +57,22 @@ contract Multisig is Ownable {
     }
 
     function addVoter(address _voter) public onlyOwner {
-        require(voters.length() < 16, "too much voters");
-        require(threshold > (voters.length() + 1) / 2, "invalid threshold");
+        if (voters.length() >= 16) revert TooManyVoters();
+        if (threshold <= (voters.length() + 1) / 2)
+            revert InvalidThreshold();
 
         voters.add(_voter);
     }
 
     function removeVoter(address _voter) public onlyOwner {
-        require(voters.length() > threshold, "voters not enough");
+        if (voters.length() <= threshold) revert NotEnoughVoters();
 
         voters.remove(_voter);
     }
 
     function changeThreshold(uint256 _newThreshold) public onlyOwner {
-        require(voters.length() >= _newThreshold && _newThreshold > voters.length() / 2, "invalid threshold");
+        if (!(voters.length() >= _newThreshold && _newThreshold > voters.length() / 2))
+            revert InvalidThreshold();
 
         threshold = _newThreshold.toUint8();
     }
@@ -86,8 +97,8 @@ contract Multisig is Ownable {
     function _checkProposal(bytes32 _proposalId) internal view returns (Proposal memory proposal) {
         proposal = proposals[_proposalId];
 
-        require(uint256(proposal._status) <= 1, "proposal already executed");
-        require(!_hasVoted(proposal, msg.sender), "already voted");
+        if (uint256(proposal._status) > 1) revert ProposalAlreadyExecuted(_proposalId);
+        if (_hasVoted(proposal, msg.sender)) revert AlreadyVoted();
 
         if (proposal._status == ProposalStatus.Inactive) {
             proposal = Proposal({_status: ProposalStatus.Active, _yesVotes: 0, _yesVotesTotal: 0});

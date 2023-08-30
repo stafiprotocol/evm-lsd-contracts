@@ -5,21 +5,27 @@ import "./interfaces/IStaking.sol";
 import "./interfaces/IBnbStakePool.sol";
 
 contract StakePool is IBnbStakePool {
+    // Custom errors to provide more descriptive revert messages.
+    error AlreadyInitialized();
+    error NotStakeManager();
+    error NotValidAddress();
+    error FailedToWithdrawForStaker();
+
     uint256 public constant TEN_DECIMALS = 1e10;
 
     address public stakingAddress;
     address public stakeManagerAddress;
 
     modifier onlyStakeManager() {
-        require(msg.sender == stakeManagerAddress, "StakePool: only stakeManager");
+        if (stakeManagerAddress != msg.sender) revert NotStakeManager();
         _;
     }
 
     receive() external payable {}
 
     function init(address _stakingAddress, address _stakeManagerAddress) external {
-        require(stakingAddress == address(0), "StakePool: already init");
-        require(_stakeManagerAddress != address(0), "StakePool: zero stake manager address");
+        if (stakingAddress != address(0)) revert AlreadyInitialized();
+        if (_stakeManagerAddress == address(0)) revert NotValidAddress();
 
         stakingAddress = _stakingAddress;
         stakeManagerAddress = _stakeManagerAddress;
@@ -60,7 +66,7 @@ contract StakePool is IBnbStakePool {
     function withdrawForStaker(address staker, uint256 amount) external override onlyStakeManager {
         if (amount > 0) {
             (bool result, ) = staker.call{value: amount}("");
-            require(result, "StakePool: withdraw call failed");
+            if (!result) revert FailedToWithdrawForStaker();
         }
     }
 

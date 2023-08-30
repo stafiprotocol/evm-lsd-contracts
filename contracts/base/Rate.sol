@@ -6,7 +6,13 @@ import "./Ownable.sol";
 import "../interfaces/IRateProvider.sol";
 
 abstract contract Rate is Ownable, IRateProvider {
-    uint256 public constant MAX_RATE_CHANGE_LIMIT = 1e15;
+    // Custom errors to provide more descriptive revert messages.
+    error LessThanMinRateChangeLimit(uint256 rateChangeLimit);
+    error GreaterThanMaxRateChangeLimit(uint256 rateChangeLimit);
+    error RateChangeExceedLimit(uint256 oldRate, uint256 newRate);
+    
+    uint256 public constant MIN_RATE_CHANGE_LIMIT = 1e13;
+    uint256 public constant MAX_RATE_CHANGE_LIMIT = 5 * 1e15;
 
     uint256 public rate;
     uint256 public rateChangeLimit;
@@ -16,12 +22,12 @@ abstract contract Rate is Ownable, IRateProvider {
         return rate;
     }
 
-    function setRateChangeLimit(uint256 _rateChangeLimit) public virtual onlyOwner {
+    function setRateChangeLimit(uint256 _rateChangeLimit) external virtual onlyOwner {
         _setRateChangeLimit(_rateChangeLimit);
     }
 
     function _initRateParams(uint256 _rateChangeLimit) internal virtual {
-        require(rate == 0, "Rate: already init");
+        if (rate != 0) revert AlreadyInitialized();
 
         _setRateChangeLimit(_rateChangeLimit);
         rate = 1e18;
@@ -29,15 +35,15 @@ abstract contract Rate is Ownable, IRateProvider {
     }
     
     function _setRateChangeLimit(uint256 _rateChangeLimit) internal virtual {
-        require(_rateChangeLimit > 0, "Rate: zero rate change limit");
-        require(_rateChangeLimit <= MAX_RATE_CHANGE_LIMIT, "Rate: max rate change limit");
+        if (_rateChangeLimit < MIN_RATE_CHANGE_LIMIT) revert LessThanMinRateChangeLimit(_rateChangeLimit);
+        if (_rateChangeLimit > MAX_RATE_CHANGE_LIMIT) revert GreaterThanMaxRateChangeLimit(_rateChangeLimit);
 
         rateChangeLimit = _rateChangeLimit;
     }
 
     function _setEraRate(uint256 _era, uint256 _rate) internal virtual {
         uint256 rateChange = _rate > rate ? _rate - rate : rate - _rate;
-        require((rateChange * 1e18) / rate < rateChangeLimit, "Rate: rate change over limit");
+        if ((rateChange * 1e18) / rate > rateChangeLimit) revert RateChangeExceedLimit(rate, _rate);
 
         rate = _rate;
         eraRate[_era] = rate;

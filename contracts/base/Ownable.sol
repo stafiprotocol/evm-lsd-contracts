@@ -3,12 +3,18 @@ pragma solidity 0.8.19;
 // SPDX-License-Identifier: GPL-3.0-only
 
 abstract contract Ownable {
+    // Custom errors to provide more descriptive revert messages.
+    error NotInitialized();
+    error AlreadyInitialized();
+    error NotOwner();
+    error NotValidAddress();
+
     address private _owner;
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     modifier onlyOwner() {
-        require(owner() == msg.sender, "Ownable: caller is not the owner");
+        if (owner() != msg.sender) revert NotOwner();
         _;
     }
 
@@ -23,18 +29,18 @@ abstract contract Ownable {
      * @dev Transfers ownership of the contract to a new account (`newOwner`).
      * Can only be called by the current owner.
      */
-    function transferOwnership(address newOwner) public virtual onlyOwner {
-        require(newOwner != address(0), "Ownable: new owner is the zero address");
-        _transferOwnership(newOwner);
+    function transferOwnership(address _newOwner) external virtual onlyOwner {
+        if (_newOwner == address(0)) revert NotValidAddress();
+        _transferOwnership(_newOwner);
     }
 
     /**
      * @dev Transfers ownership of the contract to a new account (`newOwner`).
      * Internal function without access restriction.
      */
-    function _transferOwnership(address newOwner) internal virtual {
+    function _transferOwnership(address _newOwner) internal virtual {
         address oldOwner = _owner;
-        _owner = newOwner;
-        emit OwnershipTransferred(oldOwner, newOwner);
+        _owner = _newOwner;
+        emit OwnershipTransferred(oldOwner, _newOwner);
     }
 }
