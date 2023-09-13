@@ -44,7 +44,7 @@ abstract contract UnstakePool is Ownable {
     }
 
     function _initUnstakeParams(uint256 _unbondingDuration) internal virtual {
-        if (_unbondingDuration != 0) revert AlreadyInitialized();
+        if (unbondingDuration != 0) revert AlreadyInitialized();
         _setUnbondingDuration(_unbondingDuration);
     }
 

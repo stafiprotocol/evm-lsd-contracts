@@ -11,3 +11,9 @@ typechain-types
 cache
 artifacts
 
+# debug
+contracts-dbg/*
+dbg.project.json
+
+# IDE
+.vscode/*
