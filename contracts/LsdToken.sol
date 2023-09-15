@@ -16,9 +16,9 @@ contract LsdToken is ERC20Burnable, ILsdToken, IRateProvider {
     // Construct
     constructor(
         address _stakeManagerAddress,
-        string memory name,
-        string memory symbol
-    ) ERC20(name, symbol) {
+        string memory _name,
+        string memory _symbol
+    ) ERC20(_name, _symbol) {
         stakeManagerAddress = _stakeManagerAddress;
     }
 
