@@ -6,12 +6,15 @@
     "clean": "rm -rf ./node_modules ./artifacts ./cache"
   },
   "devDependencies": {
-    "@openzeppelin/contracts": "^4.9.3",
     "@chainsafe/lodestar-types": "^0.10.0",
     "@chainsafe/ssz": "^0.6.1",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.9",
+    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
     "@nomiclabs/hardhat-ethers": "^2.1.1",
     "@nomiclabs/hardhat-etherscan": "^3.1.1",
     "@nomiclabs/hardhat-web3": "^2.0.0",
+    "@openzeppelin/contracts": "^4.9.3",
+    "@openzeppelin/contracts-upgradeable": "^4.9.3",
     "chai": "^4.3.6",
     "ethers": "^5.7.0",
     "hardhat": "^2.10.2",
