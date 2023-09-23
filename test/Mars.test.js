@@ -20,14 +20,10 @@ const { ethers } = require("hardhat");
 //   });
 // });
 
-function genOperation(target, value, data, predecessor, salt) {
-  const id = web3.utils.keccak256(
-    web3.eth.abi.encodeParameters(
-      ['address', 'uint256', 'bytes', 'uint256', 'bytes32'],
-      [target, value, data, predecessor, salt],
-    ),
-  );
-  return { id, target, value, data, predecessor, salt };
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 describe("Mars with timelock", function () {
@@ -40,32 +36,26 @@ describe("Mars with timelock", function () {
       
       const Mars = await ethers.getContractFactory("Mars");
      
-   
       const MarsV2 = await ethers.getContractFactory("MarsV2");
       const marsv2Impl = await MarsV2.deploy();
 
       const marsv1 = await hre.upgrades.deployProxy(Mars, ['Mars'], {kind: 'uups'});
       console.log(acc0.address);
       console.log(await marsv1.owner());
-      
-      await marsv1.upgradeTo(marsv2Impl.target);
+
+       await marsv1.transferOwnership(tlc.target);
+       console.log(tlc.target);
+       console.log(await marsv1.owner());
+
+      // todo: check is marsv2 a upgradeable contract
+      const upgradeToV2Data = Mars.interface.encodeFunctionData("upgradeTo", [marsv2Impl.target]);
+      await tlc.connect(acc2).schedule(marsv1.target, "0x0",upgradeToV2Data ,ethers.encodeBytes32String(""), ethers.encodeBytes32String(""), "0x1");
+
+      await sleep(1000);
+      await tlc.connect(acc3).execute(marsv1.target, "0x0",upgradeToV2Data ,ethers.encodeBytes32String(""), ethers.encodeBytes32String(""));
       const marsv2 = MarsV2.attach(marsv1.target);
 
-      // await marsv1.transferOwnership(tlc.target);
-
-      // console.log(await marsv1.owner());
-      // console.log(tlc.target);
-
      
-      // console.log(Mars.interface.encodeFunctionData("upgradeTo", []));
-
-      // console.log(Mars);
-      // await tlc.schedule(marsv1.target,0, ,0,0,2)
-
-      // expect(await marsv1.name()).to.equal('Mars');
-      
-      // const marsv2 = await hre.upgrades.upgradeProxy(marsv1, MarsV2);
-      // expect(await marsv2.name()).to.equal('Mars');
       expect(await marsv2.version()).to.equal('v2');
     });
   });
