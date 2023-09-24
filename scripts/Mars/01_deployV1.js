@@ -16,7 +16,7 @@ function sleep(ms) {
 }
 
 async function main() {
-  const minDelay = 100;
+  const minDelay = 1;
   const [acc0, acc1, acc2, acc3] = await ethers.getSigners();
 
   const TimelockController = await ethers.getContractFactory("TimelockController");
@@ -36,7 +36,7 @@ async function main() {
   await marsv1.transferOwnership(tlc.target);
 
 
-   expect(await marsv1.version()).to.equal('v1');
+   expect(await marsv1.version()).to.equal(1);
 
 
  

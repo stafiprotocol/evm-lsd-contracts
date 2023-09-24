@@ -16,8 +16,8 @@ function sleep(ms) {
 }
 
 async function main() {
-  const timelockCtlAddr = "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6";
-  const uupsProxyAddr = "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318";
+  const timelockCtlAddr = "0x7a2088a1bFc9d81c55368AE168C2C02570cB814F";
+  const uupsProxyAddr = "0x09635F643e140090A9A8Dcd712eD6285858ceBef";
   const marsv2ImplAddr = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
 
   const [acc0, acc1, acc2, acc3] = await ethers.getSigners();
@@ -35,11 +35,12 @@ async function main() {
   await hre.upgrades.validateUpgrade(Mars, MarsV2);
   console.log("MarsV2 contract addr:", marsv2ImplAddr);
 
-  const upgradeToV2Data = Mars.interface.encodeFunctionData("upgradeTo", [marsv2ImplAddr]);
+  const initFnCallData = MarsV2.interface.encodeFunctionData("initializev2", [2]);
+  const upgradeToV2Data = Mars.interface.encodeFunctionData("upgradeToAndCall", [marsv2ImplAddr, initFnCallData]);
   await tlc.connect(acc3).execute(marsv1.target, "0x0", upgradeToV2Data, ethers.encodeBytes32String(""), ethers.encodeBytes32String(""));
   const marsv2 = MarsV2.attach(marsv1.target);
 
-  expect(await marsv2.version()).to.equal('v2');
+  expect(await marsv2.version()).to.equal(2);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
