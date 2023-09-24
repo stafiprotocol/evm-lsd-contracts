@@ -20,12 +20,16 @@ contract Mars is Initializable, ERC20Upgradeable, OwnableUpgradeable, UUPSUpgrad
     {
 
     }
+
+    function version() public pure virtual returns (string memory) {
+        return "v1";
+    }
 }
 
 contract MarsV2 is Mars {
     uint256 fee;
 
-    function version() public pure returns (string memory) {
+    function version() public pure override returns (string memory) {
         return "v2";
     }
 }

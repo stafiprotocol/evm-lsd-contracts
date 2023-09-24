@@ -37,7 +37,11 @@ describe("Mars with timelock", function () {
       const Mars = await ethers.getContractFactory("Mars");
      
       const MarsV2 = await ethers.getContractFactory("MarsV2");
-      const marsv2Impl = await MarsV2.deploy();
+      
+       // check if is MarsV2 a safe upgradeable contract
+      await hre.upgrades.validateUpgrade(Mars, MarsV2);
+      const marsv2ImplAddr = await hre.upgrades.deployImplementation(MarsV2, false);
+      console.log(marsv2ImplAddr);
 
       const marsv1 = await hre.upgrades.deployProxy(Mars, ['Mars'], {kind: 'uups'});
       console.log(acc0.address);
@@ -47,14 +51,13 @@ describe("Mars with timelock", function () {
        console.log(tlc.target);
        console.log(await marsv1.owner());
 
-      // todo: check is marsv2 a upgradeable contract
-      const upgradeToV2Data = Mars.interface.encodeFunctionData("upgradeTo", [marsv2Impl.target]);
-      await tlc.connect(acc2).schedule(marsv1.target, "0x0",upgradeToV2Data ,ethers.encodeBytes32String(""), ethers.encodeBytes32String(""), "0x1");
+     
+      const upgradeToV2Data = Mars.interface.encodeFunctionData("upgradeTo", [marsv2ImplAddr]);
+      await tlc.connect(acc2).schedule(marsv1.target, "0x0", upgradeToV2Data ,ethers.encodeBytes32String(""), ethers.encodeBytes32String(""), "0x1");
 
       await sleep(1000);
-      await tlc.connect(acc3).execute(marsv1.target, "0x0",upgradeToV2Data ,ethers.encodeBytes32String(""), ethers.encodeBytes32String(""));
+      await tlc.connect(acc3).execute(marsv1.target, "0x0", upgradeToV2Data ,ethers.encodeBytes32String(""), ethers.encodeBytes32String(""));
       const marsv2 = MarsV2.attach(marsv1.target);
-
      
       expect(await marsv2.version()).to.equal('v2');
     });
