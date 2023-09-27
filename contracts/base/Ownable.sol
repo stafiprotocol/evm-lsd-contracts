@@ -2,12 +2,10 @@ pragma solidity 0.8.19;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-abstract contract Ownable {
-    // Custom errors to provide more descriptive revert messages.
-    error NotInitialized();
-    error AlreadyInitialized();
+import "./Errors.sol";
+
+abstract contract Ownable is Errors {
     error NotOwner();
-    error NotValidAddress();
 
     address private _owner;
 
@@ -30,7 +28,7 @@ abstract contract Ownable {
      * Can only be called by the current owner.
      */
     function transferOwnership(address _newOwner) external virtual onlyOwner {
-        if (_newOwner == address(0)) revert NotValidAddress();
+        if (_newOwner == address(0)) revert AddressNotAllowed();
         _transferOwnership(_newOwner);
     }
 

@@ -5,7 +5,7 @@ pragma solidity 0.8.19;
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./Ownable.sol";
 
-abstract contract UnstakePool is Ownable {
+abstract contract UnstakePoolManager is Ownable {
     // Custom errors to provide more descriptive revert messages.
     error ZeroUnbondingDuration();
     error GreaterThanMaxUnbondingDuration(uint256 unbondingDuration);

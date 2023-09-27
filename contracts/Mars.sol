@@ -7,10 +7,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 contract Mars is Initializable, ERC20Upgradeable, OwnableUpgradeable, UUPSUpgradeable {
-    uint256 _version;
 
-
-  
     function initialize(string calldata _name) public virtual initializer {
         __Ownable_init();
         __ERC20_init(_name, "MARS");
@@ -19,6 +16,7 @@ contract Mars is Initializable, ERC20Upgradeable, OwnableUpgradeable, UUPSUpgrad
         _mint(msg.sender, 10000000 * 10 ** decimals());
     }
 
+   uint256 _version;
     function _authorizeUpgrade(address newImplementation) internal 
     override
     onlyOwner

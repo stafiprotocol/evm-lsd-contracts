@@ -16,7 +16,7 @@ abstract contract DelegationBalancer is Ownable {
     }
 
     function transferDelegationBalancer(address _newDelegationBalancer) external virtual onlyOwner {
-        if (_newDelegationBalancer == address(0)) revert NotValidAddress();
+        if (_newDelegationBalancer == address(0)) revert AddressNotAllowed();
         delegationBalancer = _newDelegationBalancer;
     }
 

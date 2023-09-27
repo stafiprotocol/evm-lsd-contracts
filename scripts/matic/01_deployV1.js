@@ -16,31 +16,39 @@ function sleep(ms) {
 }
 
 async function main() {
-  const delay = 10;
-
-  const timelockCtlAddr = "0x7a2088a1bFc9d81c55368AE168C2C02570cB814F";
-  const uupsProxyAddr = "0x09635F643e140090A9A8Dcd712eD6285858ceBef";
+  const minDelay = 100;
   const [acc0, acc1, acc2, acc3] = await ethers.getSigners();
-  const TimelockController = await ethers.getContractFactory("TimelockController");
-  const tlc = TimelockController.attach(timelockCtlAddr);
-  console.log("timelock ctl addr:", tlc.target);
 
+  const TimelockController = await ethers.getContractFactory("TimelockController");
+  const tlc = await TimelockController.deploy(minDelay, [acc2.address], [acc3.address], acc1);
 
   const Mars = await ethers.getContractFactory("Mars");
-  const MarsV2 = await ethers.getContractFactory("MarsV2");
 
-  const marsv1 = Mars.attach(uupsProxyAddr);
+  const MarsV2 = await ethers.getContractFactory("MarsV2");
 
   // check if MarsV2 is a safe upgradeable contract
   await hre.upgrades.validateUpgrade(Mars, MarsV2);
   const marsv2ImplAddr = await hre.upgrades.deployImplementation(MarsV2, false);
-  console.log("MarsV2 contract addr:", marsv2ImplAddr);
+  console.log(marsv2ImplAddr);
+
+  const marsv1 = await hre.upgrades.deployProxy(Mars, ['Mars'], { kind: 'uups' });
+
+  await marsv1.transferOwnership(tlc.target);
+
+
+   expect(await marsv1.version()).to.equal(1);
+
+
  
 
-  const initFnCallData = MarsV2.interface.encodeFunctionData("initializev2", [2]);
-  const upgradeToV2Data = Mars.interface.encodeFunctionData("upgradeToAndCall", [marsv2ImplAddr, initFnCallData]);
-  
-  await tlc.connect(acc2).schedule(marsv1.target, "0x0", upgradeToV2Data, ethers.encodeBytes32String(""), ethers.encodeBytes32String(""), delay);
+  console.log("min delay:", minDelay);
+  console.log("admin: acc1:", acc1.address);
+  console.log("proposer1: acc2:", acc2.address);
+  console.log("executor: acc3:", acc3.address);
+  console.log("timelock ctl addr:", tlc.target);
+
+  console.log("UUPS proxy addr:", marsv1.target);
+  console.log("UUPS proxy owner addr:", await marsv1.owner());
 }
 
 // We recommend this pattern to be able to use async/await everywhere

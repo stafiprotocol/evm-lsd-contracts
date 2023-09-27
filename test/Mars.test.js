@@ -52,14 +52,17 @@ describe("Mars with timelock", function () {
        console.log(await marsv1.owner());
 
      
-      const upgradeToV2Data = Mars.interface.encodeFunctionData("upgradeTo", [marsv2ImplAddr]);
-      await tlc.connect(acc2).schedule(marsv1.target, "0x0", upgradeToV2Data ,ethers.encodeBytes32String(""), ethers.encodeBytes32String(""), "0x1");
+       const initFuncationCallData = MarsV2.interface.encodeFunctionData("initializev2", [2]);
+       const upgradeToV2Data = Mars.interface.encodeFunctionData("upgradeToAndCall", [marsv2ImplAddr, initFuncationCallData]);
+       await tlc.connect(acc2).schedule(marsv1.target, "0x0", upgradeToV2Data ,ethers.encodeBytes32String(""), ethers.encodeBytes32String(""), "0x1");
 
       await sleep(1000);
       await tlc.connect(acc3).execute(marsv1.target, "0x0", upgradeToV2Data ,ethers.encodeBytes32String(""), ethers.encodeBytes32String(""));
       const marsv2 = MarsV2.attach(marsv1.target);
+
+      
      
-      expect(await marsv2.version()).to.equal('v2');
+      expect(await marsv2.version()).to.equal(2);
     });
   });
 });

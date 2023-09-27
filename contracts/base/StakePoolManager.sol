@@ -5,7 +5,7 @@ pragma solidity 0.8.19;
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "./Ownable.sol";
 
-abstract contract StakePool is Ownable {
+abstract contract StakePoolManager is Ownable {
     // Custom errors to provide more descriptive revert messages.
     error PoolExist(address poolAddress);
 
@@ -45,7 +45,7 @@ abstract contract StakePool is Ownable {
     }
 
     function _addStakePool(address _poolAddress) internal virtual {
-        if (_poolAddress == address(0)) revert NotValidAddress();
+        if (_poolAddress == address(0)) revert AddressNotAllowed();
         if (!bondedPools.add(_poolAddress)) revert PoolExist(_poolAddress);
     }
 }
