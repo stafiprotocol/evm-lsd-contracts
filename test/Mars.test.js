@@ -31,7 +31,7 @@ describe("Mars with timelock", function () {
     it("goes to mars", async function () {
       const [acc0, acc1, acc2, acc3] = await ethers.getSigners();
 
-      const TimelockController = await ethers.getContractFactory("TimelockController");
+      const TimelockController = await ethers.getContractFactory("Timelock");
       const tlc = await TimelockController.deploy(1, [acc2.address], [acc3.address], acc1);
       
       const Mars = await ethers.getContractFactory("Mars");

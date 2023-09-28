@@ -5,11 +5,12 @@ pragma abicoder v2;
 
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IValidatorShare.sol";
 import "./interfaces/IGovStakeManager.sol";
 import "./interfaces/IMaticStakePool.sol";
 
-contract StakePool is Initializable, IMaticStakePool {
+contract StakePool is Initializable, IMaticStakePool, UUPSUpgradeable {
     // Custom errors to provide more descriptive revert messages.
     error AlreadyInitialized();
     error NotStakeManager();
@@ -33,6 +34,11 @@ contract StakePool is Initializable, IMaticStakePool {
         stakeManagerAddress = _stakeManagerAddress;
         govStakeManagerAddress = _govStakeManagerAddress;
     }
+
+    function _authorizeUpgrade(address newImplementation) internal 
+    override
+    onlyStakeManager
+    {}
 
     function checkAndWithdrawRewards(
         uint256[] calldata _validators

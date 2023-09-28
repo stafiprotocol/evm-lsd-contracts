@@ -7,9 +7,9 @@ import "./StakePool.sol";
 import "./StakeManager.sol";
 import "../LsdToken.sol";
 import "../Timelock.sol";
-import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "../base/Ownable.sol";
 import "./interfaces/ILsdNetworkFactory.sol";
 
@@ -53,9 +53,6 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyFactoryAdmin {}
-
-    // Receive eth
-    receive() external payable {}
 
     // ------------ getter ------------
 
