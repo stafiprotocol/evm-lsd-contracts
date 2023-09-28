@@ -1,9 +1,3 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// You can also run a script with `npx hardhat run <script>`. If you do that, Hardhat
-// will compile your contracts, add the Hardhat Runtime Environment's members to the
-// global scope, and execute the script.
 const hre = require("hardhat");
 const { expect } = require("chai");
 
@@ -28,14 +22,6 @@ let stakeTokenAddress = "";
 // const validatorShareAddress = "0x01d5dc56ad4206bb0c132d834644d57f51fed5ec";
 // const stakeTokenAddress = "0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0";
 
-// Step 1: Deploy Timelock controller
-
-function sleep(ms) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
-
 async function main() {
   const [acc0, acc1, acc2, acc3] = await ethers.getSigners();
   if (!factoryAdmin) {
@@ -48,9 +34,6 @@ async function main() {
     stakeTokenAddress = token.target;
     console.log("WARN: created dummy token as stake token:", stakeTokenAddress);
   }
-
-  // const TimelockController = await ethers.getContractFactory("Timelock");
-  // const tlc = await TimelockController.deploy(minDelay, [acc2.address], [acc3.address], acc1);
 
   const MaticStakeManager = await hre.ethers.getContractFactory("contracts/matic/StakeManager.sol:StakeManager");
   const managerLogicContract = await MaticStakeManager.deploy();
@@ -68,11 +51,6 @@ async function main() {
 
   console.log("MATIC Stake Manager Logic Address:", stakeManagerLogicAddress);
   console.log("MATIC Stake Pool Logic Address:", stakePoolLogicAddress);
-  // console.log("min delay:", minDelay);
-  // console.log("admin: acc1:", acc1.address);
-  // console.log("proposer1: acc2:", acc2.address);
-  // console.log("executor: acc3:", acc3.address);
-  // console.log("timelock ctl addr:", tlc.target);
 
   console.log("Factory UUPS proxy addr:", factory.target);
   console.log("Factory UUPS proxy admin addr:", await factory.factoryAdmin());
