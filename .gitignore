@@ -17,3 +17,7 @@ dbg.project.json
 
 # IDE
 .vscode/*
+
+# Remix
+/.deps
+/.deploys
