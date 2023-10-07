@@ -311,4 +311,8 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
 
         emit ExecuteNewEra(_era, newRate);
     }
+
+    function version() external view returns (uint8) {
+        return _getInitializedVersion();
+    }
 }

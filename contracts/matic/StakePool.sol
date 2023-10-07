@@ -137,4 +137,8 @@ contract StakePool is Initializable, IMaticStakePool, UUPSUpgradeable {
         }
         return totalStake;
     }
+
+    function version() external view returns (uint8) {
+        return _getInitializedVersion();
+    }
 }
