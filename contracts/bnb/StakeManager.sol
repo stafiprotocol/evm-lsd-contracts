@@ -70,7 +70,7 @@ contract StakeManager is Multisig, Manager {
         address _poolAddress,
         address _validator
     ) external {
-        if (_validator == address(0)) revert NotValidAddress();
+        if (_validator == address(0)) revert AddressNotAllowed();
 
         initMultisig(_initialVoters, _initialThreshold);
         _initManagerParams(_lsdToken, _poolAddress, 16, 3 * 1e14);

@@ -4,11 +4,13 @@ pragma solidity 0.8.19;
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IMaticStakePool.sol";
 import "../interfaces/ILsdToken.sol";
 import "../base/Manager.sol";
 
-contract StakeManager is Manager {
+contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     // Custom errors to provide more descriptive revert messages.
     error ZeroStakeTokenAddress();
     error PoolNotEmpty();
@@ -50,8 +52,7 @@ contract StakeManager is Manager {
     event NewReward(address pool, uint256 amount);
     event NewClaimedNonce(address pool, uint256 validator, uint256 nonce);
 
-    // init
-    function init(address _lsdToken, address _stakeTokenAddress, address _poolAddress, uint256 _validatorId) external {
+    function initialize(address _lsdToken, address _stakeTokenAddress, address _poolAddress, uint256 _validatorId, address _owner) external virtual initializer {
         if (_stakeTokenAddress == address(0)) revert ZeroStakeTokenAddress();
 
         _initManagerParams(_lsdToken, _poolAddress, 4, 5 * 1e14);
@@ -59,10 +60,15 @@ contract StakeManager is Manager {
         validatorIdsOf[_poolAddress].add(_validatorId);
         stakeTokenAddress = _stakeTokenAddress;
 
-        _transferOwnership(msg.sender);
+        _transferOwnership(_owner);
 
         IMaticStakePool(_poolAddress).approveForStakeManager(stakeTokenAddress, 1e28);
     }
+
+    function _authorizeUpgrade(address newImplementation) internal 
+    override
+    onlyOwner
+    {}
 
     function getValidatorIdsOf(address _poolAddress) public view returns (uint256[] memory validatorIds) {
         validatorIds = new uint256[](validatorIdsOf[_poolAddress].length());
@@ -304,5 +310,9 @@ contract StakeManager is Manager {
         _setEraRate(_era, newRate);
 
         emit ExecuteNewEra(_era, newRate);
+    }
+
+    function version() external view returns (uint8) {
+        return _getInitializedVersion();
     }
 }

@@ -4,11 +4,13 @@ pragma abicoder v2;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IValidatorShare.sol";
 import "./interfaces/IGovStakeManager.sol";
 import "./interfaces/IMaticStakePool.sol";
 
-contract StakePool is IMaticStakePool {
+contract StakePool is Initializable, IMaticStakePool, UUPSUpgradeable {
     // Custom errors to provide more descriptive revert messages.
     error AlreadyInitialized();
     error NotStakeManager();
@@ -25,14 +27,18 @@ contract StakePool is IMaticStakePool {
         _;
     }
 
-    function init(address _stakeManagerAddress, address _govStakeManagerAddress) external {
-        if (stakeManagerAddress != address(0)) revert AlreadyInitialized();
+    function initialize(address _stakeManagerAddress, address _govStakeManagerAddress) external initializer {
         if (_stakeManagerAddress == address(0)) revert NotValidAddress();
         if (_govStakeManagerAddress == address(0)) revert NotValidAddress();
 
         stakeManagerAddress = _stakeManagerAddress;
         govStakeManagerAddress = _govStakeManagerAddress;
     }
+
+    function _authorizeUpgrade(address newImplementation) internal 
+    override
+    onlyStakeManager
+    {}
 
     function checkAndWithdrawRewards(
         uint256[] calldata _validators
@@ -130,5 +136,9 @@ contract StakePool is IMaticStakePool {
             totalStake = totalStake + stake;
         }
         return totalStake;
+    }
+
+    function version() external view returns (uint8) {
+        return _getInitializedVersion();
     }
 }

@@ -4,12 +4,12 @@ pragma solidity 0.8.19;
 
 import "./Era.sol";
 import "./Rate.sol";
-import "./StakePool.sol";
-import "./UnstakePool.sol";
+import "./StakePoolManager.sol";
+import "./UnstakePoolManager.sol";
 import "./Protocol.sol";
 import "./DelegationBalancer.sol";
 
-abstract contract Manager is Era, Rate, StakePool, UnstakePool, Protocol, DelegationBalancer {
+abstract contract Manager is Era, Rate, StakePoolManager, UnstakePoolManager, Protocol, DelegationBalancer {
     function _initManagerParams(
         address _lsdToken,
         address _poolAddress,

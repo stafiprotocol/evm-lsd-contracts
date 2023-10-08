@@ -30,7 +30,7 @@ abstract contract Protocol is Ownable {
 
     function _initProtocolParams(address _lsdToken) internal virtual {
         if (protocolFeeCommission != 0) revert AlreadyInitialized();
-        if (_lsdToken == address(0)) revert NotValidAddress();
+        if (_lsdToken == address(0)) revert AddressNotAllowed();
 
         lsdToken = _lsdToken;
         protocolFeeCommission = 1e17;
