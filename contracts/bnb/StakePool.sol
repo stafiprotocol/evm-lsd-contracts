@@ -107,4 +107,8 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable,  IBnbStakePool {
     function getPendingRedelegateTime(address valSrc, address valDst) external view override returns (uint256) {
         return IStaking(stakingAddress).getPendingRedelegateTime(address(this), valSrc, valDst);
     }
+
+    function version() external view returns (uint8) {
+        return _getInitializedVersion();
+    }
 }

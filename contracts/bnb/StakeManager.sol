@@ -527,4 +527,8 @@ contract StakeManager is Initializable, UUPSUpgradeable, Multisig, Manager {
 
         emit Settle(currentEra(), _poolAddress);
     }
+
+    function version() external view returns (uint8) {
+        return _getInitializedVersion();
+    }
 }
