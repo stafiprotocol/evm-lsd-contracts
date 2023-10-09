@@ -39,7 +39,7 @@ abstract contract StakePoolManager is Ownable {
         minStakeAmount = _minStakeAmount;
     }
 
-    function _initStakePoolParams(address _poolAddress) internal virtual {
+    function _initStakePoolParams(address _poolAddress) internal virtual onlyInitializing {
         if (bondedPools.length() > 0) revert AlreadyInitialized();
         _addStakePool(_poolAddress);
     }

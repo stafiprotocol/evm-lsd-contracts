@@ -26,9 +26,9 @@ abstract contract Rate is Ownable, IRateProvider {
         _setRateChangeLimit(_rateChangeLimit);
     }
 
-    function _initRateParams(uint256 _rateChangeLimit) internal virtual {
+    function _initRateParams(uint256 _rateChangeLimit) internal virtual onlyInitializing {
         if (rate != 0) revert AlreadyInitialized();
-
+        
         _setRateChangeLimit(_rateChangeLimit);
         rate = 1e18;
         eraRate[0] = rate;

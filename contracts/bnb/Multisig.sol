@@ -4,9 +4,11 @@ pragma solidity 0.8.19;
 
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+
 import "../base/Ownable.sol";
 
-contract Multisig is Ownable {
+contract Multisig is Initializable, Ownable {
     // Custom errors to provide more descriptive revert messages.
     error NotVoter();
     error InvalidThreshold();
@@ -42,7 +44,7 @@ contract Multisig is Ownable {
         _;
     }
 
-    function initMultisig(address[] memory _voters, uint256 _initialThreshold) public {
+    function initMultisig(address[] memory _voters, uint256 _initialThreshold) public virtual onlyInitializing {
         if (threshold != 0) revert AlreadyInitialized();
         if (!(_voters.length >= _initialThreshold && _initialThreshold > _voters.length / 2))
             revert InvalidThreshold();
@@ -53,7 +55,6 @@ contract Multisig is Ownable {
         for (uint256 i; i < initialVoterCount; ++i) {
             voters.add(_voters[i]);
         }
-        _transferOwnership(msg.sender);
     }
 
     function addVoter(address _voter) public onlyOwner {

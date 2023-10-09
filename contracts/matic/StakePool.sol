@@ -12,7 +12,6 @@ import "./interfaces/IMaticStakePool.sol";
 
 contract StakePool is Initializable, IMaticStakePool, UUPSUpgradeable {
     // Custom errors to provide more descriptive revert messages.
-    error AlreadyInitialized();
     error NotStakeManager();
     error NotValidAddress();
     error FailedToWithdrawForStaker();
