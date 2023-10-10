@@ -10,16 +10,13 @@
     "@chainsafe/ssz": "^0.6.1",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.9",
     "@nomicfoundation/hardhat-toolbox": "^3",
-    "@nomiclabs/hardhat-ethers": "^2.1.1",
     "@nomiclabs/hardhat-etherscan": "^3.1.1",
     "@nomiclabs/hardhat-web3": "^2.0.0",
     "@openzeppelin/contracts": "^4.9.3",
     "@openzeppelin/contracts-upgradeable": "^4.9.3",
     "@openzeppelin/hardhat-upgrades": "^2.2.1",
     "chai": "^4.3.6",
-    "ethers": "^6.7.1",
     "hardhat": "^2.10.2",
-    "hardhat-contract-sizer": "^2.6.1",
-    "web3": "^1.7.5"
+    "hardhat-contract-sizer": "^2.6.1"
   }
 }

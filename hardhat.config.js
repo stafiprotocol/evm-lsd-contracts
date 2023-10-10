@@ -18,7 +18,7 @@ module.exports = {
   contractSizer: {
     alphaSort: true,
     runOnCompile: false,
-    disambiguatePaths: false,
+    disambiguatePaths: true,
   },
   networks: {
     hardhat: {
