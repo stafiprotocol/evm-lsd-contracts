@@ -2,12 +2,17 @@ pragma solidity 0.8.19;
 // SPDX-License-Identifier: GPL-3.0-only
 
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-import "./interfaces/IBnbStakePool.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+
 import "../interfaces/ILsdToken.sol";
-import "./Multisig.sol";
 import "../base/Manager.sol";
 
-contract StakeManager is Multisig, Manager {
+import "./Multisig.sol";
+import "./interfaces/IBnbStakePool.sol";
+
+
+contract StakeManager is Initializable, UUPSUpgradeable, Multisig, Manager {
     // Custom errors to provide more descriptive revert messages.
     error PoolNotEmpty();
     error DelegateNotEmpty();
@@ -63,15 +68,17 @@ contract StakeManager is Multisig, Manager {
     event Delegate(address pool, address validator, uint256 amount);
     event Undelegate(address pool, address validator, uint256 amount);
 
-    function init(
+    function initialize(
         address[] calldata _initialVoters,
         uint256 _initialThreshold,
         address _lsdToken,
         address _poolAddress,
-        address _validator
-    ) external {
+        address _validator,
+        address _owner
+    ) external virtual initializer {
         if (_validator == address(0)) revert AddressNotAllowed();
 
+        _transferOwnership(_owner);
         initMultisig(_initialVoters, _initialThreshold);
         _initManagerParams(_lsdToken, _poolAddress, 16, 3 * 1e14);
 
@@ -79,6 +86,11 @@ contract StakeManager is Multisig, Manager {
 
         delegatedDiffLimit = 1e11;
     }
+
+    function _authorizeUpgrade(address newImplementation) internal
+    override
+    onlyOwner
+    {}
 
     function getStakeRelayerFee() public view returns (uint256) {
         return IBnbStakePool(bondedPools.at(0)).getRelayerFee() / 2;
@@ -514,5 +526,9 @@ contract StakeManager is Multisig, Manager {
         pendingUndelegateOf[_poolAddress] = pendingUndelegate;
 
         emit Settle(currentEra(), _poolAddress);
+    }
+
+    function version() external view returns (uint8) {
+        return _getInitializedVersion();
     }
 }

@@ -1,12 +1,16 @@
 pragma solidity 0.8.19;
 // SPDX-License-Identifier: GPL-3.0-only
 
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+
+import "../base/Ownable.sol";
+
 import "./interfaces/IStaking.sol";
 import "./interfaces/IBnbStakePool.sol";
 
-contract StakePool is IBnbStakePool {
+contract StakePool is Initializable, UUPSUpgradeable, Ownable,  IBnbStakePool {
     // Custom errors to provide more descriptive revert messages.
-    error AlreadyInitialized();
     error NotStakeManager();
     error NotValidAddress();
     error FailedToWithdrawForStaker();
@@ -23,13 +27,19 @@ contract StakePool is IBnbStakePool {
 
     receive() external payable {}
 
-    function init(address _stakingAddress, address _stakeManagerAddress) external {
+    function initialize(address _stakingAddress, address _stakeManagerAddress, address _owner) external virtual initializer {
         if (stakingAddress != address(0)) revert AlreadyInitialized();
         if (_stakeManagerAddress == address(0)) revert NotValidAddress();
 
+        _transferOwnership(_owner);
         stakingAddress = _stakingAddress;
         stakeManagerAddress = _stakeManagerAddress;
     }
+
+    function _authorizeUpgrade(address newImplementation) internal
+    override
+    onlyOwner
+    {}
 
     function checkAndClaimReward() external override onlyStakeManager returns (uint256) {
         if (IStaking(stakingAddress).getDistributedReward(address(this)) > 0) {
@@ -96,5 +106,9 @@ contract StakePool is IBnbStakePool {
 
     function getPendingRedelegateTime(address valSrc, address valDst) external view override returns (uint256) {
         return IStaking(stakingAddress).getPendingRedelegateTime(address(this), valSrc, valDst);
+    }
+
+    function version() external view returns (uint8) {
+        return _getInitializedVersion();
     }
 }

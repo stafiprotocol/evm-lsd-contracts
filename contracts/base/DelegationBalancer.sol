@@ -20,8 +20,8 @@ abstract contract DelegationBalancer is Ownable {
         delegationBalancer = _newDelegationBalancer;
     }
 
-    function _initDelegationBalancer() internal virtual {      
-        if (delegationBalancer != address(0)) revert AlreadyInitialized();  
+    function _initDelegationBalancer() internal virtual onlyInitializing {
+        if (delegationBalancer != address(0)) revert AlreadyInitialized();
         delegationBalancer = msg.sender;
     }
 }

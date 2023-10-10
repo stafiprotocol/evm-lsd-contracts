@@ -15,7 +15,7 @@ abstract contract Manager is Era, Rate, StakePoolManager, UnstakePoolManager, Pr
         address _poolAddress,
         uint256 _unbondingDuration,
         uint256 _rateChangeLimit
-    ) internal virtual {
+    ) internal virtual onlyInitializing {
         _initProtocolParams(_lsdToken);
         _initEraParams();
         _initRateParams(_rateChangeLimit);

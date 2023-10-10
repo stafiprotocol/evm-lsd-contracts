@@ -21,3 +21,5 @@ dbg.project.json
 # Remix
 /.deps
 /.deploys
+
+/secrets.json

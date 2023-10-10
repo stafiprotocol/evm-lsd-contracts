@@ -2,9 +2,10 @@ pragma solidity 0.8.19;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./Errors.sol";
 
-abstract contract Ownable is Errors {
+abstract contract Ownable is Errors, Initializable {
     error NotOwner();
 
     address private _owner;
@@ -13,6 +14,11 @@ abstract contract Ownable is Errors {
 
     modifier onlyOwner() {
         if (owner() != msg.sender) revert NotOwner();
+        _;
+    }
+
+    modifier onlyOwnerOrInitializing() {
+        if (!_isInitializing() && owner() != msg.sender) revert NotOwner();
         _;
     }
 
@@ -36,7 +42,7 @@ abstract contract Ownable is Errors {
      * @dev Transfers ownership of the contract to a new account (`newOwner`).
      * Internal function without access restriction.
      */
-    function _transferOwnership(address _newOwner) internal virtual {
+    function _transferOwnership(address _newOwner) internal virtual onlyOwnerOrInitializing {
         address oldOwner = _owner;
         _owner = _newOwner;
         emit OwnershipTransferred(oldOwner, _newOwner);
