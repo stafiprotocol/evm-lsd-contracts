@@ -11,7 +11,6 @@ import "../base/Manager.sol";
 import "./Multisig.sol";
 import "./interfaces/IBnbStakePool.sol";
 
-
 contract StakeManager is Initializable, UUPSUpgradeable, Multisig, Manager {
     // Custom errors to provide more descriptive revert messages.
     error PoolNotEmpty();
@@ -87,10 +86,7 @@ contract StakeManager is Initializable, UUPSUpgradeable, Multisig, Manager {
         delegatedDiffLimit = 1e11;
     }
 
-    function _authorizeUpgrade(address newImplementation) internal
-    override
-    onlyOwner
-    {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function getStakeRelayerFee() public view returns (uint256) {
         return IBnbStakePool(bondedPools.at(0)).getRelayerFee() / 2;
@@ -116,9 +112,11 @@ contract StakeManager is Initializable, UUPSUpgradeable, Multisig, Manager {
         PoolInfo memory poolInfo = poolInfoOf[_poolAddress];
         if (!(poolInfo.active == 0 && poolInfo.bond == 0 && poolInfo.unbond == 0)) revert PoolNotEmpty();
         if (IBnbStakePool(_poolAddress).getTotalDelegated() != 0) revert DelegateNotEmpty();
-        if (!(pendingDelegateOf[_poolAddress] == 0 &&
+        if (
+            !(pendingDelegateOf[_poolAddress] == 0 &&
                 pendingUndelegateOf[_poolAddress] == 0 &&
-                undistributedRewardOf[_poolAddress] == 0)) revert PendingDelegateNotEmpty();
+                undistributedRewardOf[_poolAddress] == 0)
+        ) revert PendingDelegateNotEmpty();
         if (!bondedPools.remove(_poolAddress)) revert PoolNotExist(_poolAddress);
     }
 
@@ -151,9 +149,10 @@ contract StakeManager is Initializable, UUPSUpgradeable, Multisig, Manager {
             validatorsOf[_poolAddress].add(_dstValidator);
         }
 
-        if (!(block.timestamp >= IBnbStakePool(_poolAddress).getPendingRedelegateTime(_srcValidator, _dstValidator) &&
-                block.timestamp >= IBnbStakePool(_poolAddress).getPendingRedelegateTime(_dstValidator, _srcValidator)))
-            revert PendingRedelegationExist();
+        if (
+            !(block.timestamp >= IBnbStakePool(_poolAddress).getPendingRedelegateTime(_srcValidator, _dstValidator) &&
+                block.timestamp >= IBnbStakePool(_poolAddress).getPendingRedelegateTime(_dstValidator, _srcValidator))
+        ) revert PendingRedelegationExist();
 
         _checkAndRepairDelegated(_poolAddress);
 
@@ -352,9 +351,11 @@ contract StakeManager is Initializable, UUPSUpgradeable, Multisig, Manager {
         uint256[] calldata _latestRewardTimestampList
     ) private {
         if (currentEra() < _era) revert EraNotMatch();
-        if (!(_poolAddressList.length == bondedPools.length() &&
+        if (
+            !(_poolAddressList.length == bondedPools.length() &&
                 _poolAddressList.length == _newRewardList.length &&
-                _poolAddressList.length == _latestRewardTimestampList.length)) revert ListLengthNotMatch();
+                _poolAddressList.length == _latestRewardTimestampList.length)
+        ) revert ListLengthNotMatch();
         // update era
         latestEra = _era;
         // update pool info
@@ -362,8 +363,10 @@ contract StakeManager is Initializable, UUPSUpgradeable, Multisig, Manager {
         uint256 totalNewActive;
         for (uint256 i = 0; i < _poolAddressList.length; ++i) {
             address poolAddress = _poolAddressList[i];
-            if (!(_latestRewardTimestampList[i] >= latestRewardTimestampOf[poolAddress] &&
-                    _latestRewardTimestampList[i] < block.timestamp)) revert RewardTimestampNotMatch();
+            if (
+                !(_latestRewardTimestampList[i] >= latestRewardTimestampOf[poolAddress] &&
+                    _latestRewardTimestampList[i] < block.timestamp)
+            ) revert RewardTimestampNotMatch();
 
             PoolInfo memory poolInfo = poolInfoOf[poolAddress];
             if (poolInfo.era == latestEra) revert PoolDuplicated(poolAddress);
@@ -407,11 +410,10 @@ contract StakeManager is Initializable, UUPSUpgradeable, Multisig, Manager {
             pendingUndelegate = pendingUndelegate - deduction;
 
             // cal total active
-            uint256 poolNewActive = IBnbStakePool(poolAddress)
-                .getTotalDelegated()
-                + pendingDelegate
-                + undistributedRewardOf[poolAddress]
-                - pendingUndelegate;
+            uint256 poolNewActive = IBnbStakePool(poolAddress).getTotalDelegated() +
+                pendingDelegate +
+                undistributedRewardOf[poolAddress] -
+                pendingUndelegate;
 
             totalNewActive = totalNewActive + poolNewActive;
 

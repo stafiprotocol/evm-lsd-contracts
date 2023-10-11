@@ -5,6 +5,7 @@
     "test": "hardhat test",
     "clean": "rm -rf ./node_modules ./artifacts ./cache"
   },
+  "license": "GPL-3.0-only",
   "devDependencies": {
     "@chainsafe/lodestar-types": "^0.10.0",
     "@chainsafe/ssz": "^0.6.1",

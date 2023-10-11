@@ -52,7 +52,13 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     event NewReward(address pool, uint256 amount);
     event NewClaimedNonce(address pool, uint256 validator, uint256 nonce);
 
-    function initialize(address _lsdToken, address _stakeTokenAddress, address _poolAddress, uint256 _validatorId, address _owner) external virtual initializer {
+    function initialize(
+        address _lsdToken,
+        address _stakeTokenAddress,
+        address _poolAddress,
+        uint256 _validatorId,
+        address _owner
+    ) external virtual initializer {
         if (_stakeTokenAddress == address(0)) revert ZeroStakeTokenAddress();
 
         _initManagerParams(_lsdToken, _poolAddress, 4, 5 * 1e14);
@@ -65,10 +71,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         IMaticStakePool(_poolAddress).approveForStakeManager(stakeTokenAddress, 1e28);
     }
 
-    function _authorizeUpgrade(address newImplementation) internal 
-    override
-    onlyOwner
-    {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function getValidatorIdsOf(address _poolAddress) public view returns (uint256[] memory validatorIds) {
         validatorIds = new uint256[](validatorIdsOf[_poolAddress].length());
@@ -239,7 +242,10 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
             // unstakeClaimTokens
             for (uint256 j = 0; j < validators.length; ++j) {
                 uint256 oldClaimedNonce = maxClaimedNonceOf[poolAddress][validators[j]];
-                uint256 newClaimedNonce = IMaticStakePool(poolAddress).unstakeClaimTokens(validators[j], oldClaimedNonce);
+                uint256 newClaimedNonce = IMaticStakePool(poolAddress).unstakeClaimTokens(
+                    validators[j],
+                    oldClaimedNonce
+                );
                 if (newClaimedNonce > oldClaimedNonce) {
                     maxClaimedNonceOf[poolAddress][validators[j]] = newClaimedNonce;
 

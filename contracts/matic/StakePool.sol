@@ -34,10 +34,7 @@ contract StakePool is Initializable, IMaticStakePool, UUPSUpgradeable {
         govStakeManagerAddress = _govStakeManagerAddress;
     }
 
-    function _authorizeUpgrade(address newImplementation) internal 
-    override
-    onlyStakeManager
-    {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyStakeManager {}
 
     function checkAndWithdrawRewards(
         uint256[] calldata _validators

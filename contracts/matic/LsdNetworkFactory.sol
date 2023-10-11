@@ -2,7 +2,6 @@ pragma solidity 0.8.19;
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-
 import "./StakePool.sol";
 import "./StakeManager.sol";
 import "../LsdToken.sol";
@@ -125,8 +124,12 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
 
         (success, data) = contracts._stakeManager.call(
             abi.encodeWithSelector(
-                StakeManager.initialize.selector, contracts._lsdToken, stakeTokenAddress,  
-                contracts._stakePool, _validatorId, _networkAdmin
+                StakeManager.initialize.selector,
+                contracts._lsdToken,
+                stakeTokenAddress,
+                contracts._stakePool,
+                _validatorId,
+                _networkAdmin
             )
         );
         if (!success) {
@@ -149,12 +152,6 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
 
         address lsdToken = address(new LsdToken(stakeManager, _lsdTokenName, _lsdTokenSymbol));
 
-        return
-            NetworkContracts(
-                stakeManager,
-                stakePool,
-                lsdToken,
-                block.number
-            );
+        return NetworkContracts(stakeManager, stakePool, lsdToken, block.number);
     }
 }

@@ -46,8 +46,7 @@ contract Multisig is Initializable, Ownable {
 
     function initMultisig(address[] memory _voters, uint256 _initialThreshold) public virtual onlyInitializing {
         if (threshold != 0) revert AlreadyInitialized();
-        if (!(_voters.length >= _initialThreshold && _initialThreshold > _voters.length / 2))
-            revert InvalidThreshold();
+        if (!(_voters.length >= _initialThreshold && _initialThreshold > _voters.length / 2)) revert InvalidThreshold();
         if (_voters.length > 16) revert TooManyVoters();
 
         threshold = _initialThreshold.toUint8();
@@ -59,8 +58,7 @@ contract Multisig is Initializable, Ownable {
 
     function addVoter(address _voter) public onlyOwner {
         if (voters.length() >= 16) revert TooManyVoters();
-        if (threshold <= (voters.length() + 1) / 2)
-            revert InvalidThreshold();
+        if (threshold <= (voters.length() + 1) / 2) revert InvalidThreshold();
 
         voters.add(_voter);
     }
@@ -72,8 +70,7 @@ contract Multisig is Initializable, Ownable {
     }
 
     function changeThreshold(uint256 _newThreshold) public onlyOwner {
-        if (!(voters.length() >= _newThreshold && _newThreshold > voters.length() / 2))
-            revert InvalidThreshold();
+        if (!(voters.length() >= _newThreshold && _newThreshold > voters.length() / 2)) revert InvalidThreshold();
 
         threshold = _newThreshold.toUint8();
     }

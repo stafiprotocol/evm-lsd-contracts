@@ -10,7 +10,7 @@ abstract contract Rate is Ownable, IRateProvider {
     error LessThanMinRateChangeLimit(uint256 rateChangeLimit);
     error GreaterThanMaxRateChangeLimit(uint256 rateChangeLimit);
     error RateChangeExceedLimit(uint256 oldRate, uint256 newRate);
-    
+
     uint256 public constant MIN_RATE_CHANGE_LIMIT = 1e13;
     uint256 public constant MAX_RATE_CHANGE_LIMIT = 5 * 1e15;
 
@@ -28,12 +28,12 @@ abstract contract Rate is Ownable, IRateProvider {
 
     function _initRateParams(uint256 _rateChangeLimit) internal virtual onlyInitializing {
         if (rate != 0) revert AlreadyInitialized();
-        
+
         _setRateChangeLimit(_rateChangeLimit);
         rate = 1e18;
         eraRate[0] = rate;
     }
-    
+
     function _setRateChangeLimit(uint256 _rateChangeLimit) internal virtual {
         if (_rateChangeLimit < MIN_RATE_CHANGE_LIMIT) revert LessThanMinRateChangeLimit(_rateChangeLimit);
         if (_rateChangeLimit > MAX_RATE_CHANGE_LIMIT) revert GreaterThanMaxRateChangeLimit(_rateChangeLimit);

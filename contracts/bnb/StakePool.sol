@@ -9,7 +9,7 @@ import "../base/Ownable.sol";
 import "./interfaces/IStaking.sol";
 import "./interfaces/IBnbStakePool.sol";
 
-contract StakePool is Initializable, UUPSUpgradeable, Ownable,  IBnbStakePool {
+contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
     // Custom errors to provide more descriptive revert messages.
     error NotStakeManager();
     error NotValidAddress();
@@ -27,7 +27,11 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable,  IBnbStakePool {
 
     receive() external payable {}
 
-    function initialize(address _stakingAddress, address _stakeManagerAddress, address _owner) external virtual initializer {
+    function initialize(
+        address _stakingAddress,
+        address _stakeManagerAddress,
+        address _owner
+    ) external virtual initializer {
         if (stakingAddress != address(0)) revert AlreadyInitialized();
         if (_stakeManagerAddress == address(0)) revert NotValidAddress();
 
@@ -36,10 +40,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable,  IBnbStakePool {
         stakeManagerAddress = _stakeManagerAddress;
     }
 
-    function _authorizeUpgrade(address newImplementation) internal
-    override
-    onlyOwner
-    {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function checkAndClaimReward() external override onlyStakeManager returns (uint256) {
         if (IStaking(stakingAddress).getDistributedReward(address(this)) > 0) {

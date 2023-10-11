@@ -1,7 +1,10 @@
 {
     "overrides": [
         {
-            "files": "*.sol",
+            "files": [
+                "*.sol",
+                "*.js"
+            ],
             "options": {
                 "printWidth": 120,
                 "tabWidth": 4,
