@@ -7,13 +7,14 @@ const { mnemonic } = require('./secrets.json');
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  solidity: "0.8.19",
-  settings: {
-    optimizer: {
-      enabled: true,
-      runs: 200,
-    },
-    viaIR: true,
+  solidity: {
+    version: "0.8.19",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200
+      }
+    }
   },
   contractSizer: {
     alphaSort: true,
@@ -42,7 +43,7 @@ module.exports = {
       url: "https://data-seed-prebsc-1-s1.bnbchain.org:8545",
       chainId: 97,
       gasPrice: 20000000000,
-      accounts: {mnemonic: mnemonic}
+      accounts: { mnemonic: mnemonic }
     },
   }
 };
