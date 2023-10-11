@@ -26,6 +26,10 @@ contract StakePool is Initializable, IMaticStakePool, UUPSUpgradeable {
         _;
     }
 
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize(address _stakeManagerAddress, address _govStakeManagerAddress) external initializer {
         if (_stakeManagerAddress == address(0)) revert NotValidAddress();
         if (_govStakeManagerAddress == address(0)) revert NotValidAddress();

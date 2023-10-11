@@ -52,6 +52,10 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     event NewReward(address pool, uint256 amount);
     event NewClaimedNonce(address pool, uint256 validator, uint256 nonce);
 
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize(
         address _lsdToken,
         address _stakeTokenAddress,

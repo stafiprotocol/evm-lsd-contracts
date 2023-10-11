@@ -67,6 +67,10 @@ contract StakeManager is Initializable, UUPSUpgradeable, Multisig, Manager {
     event Delegate(address pool, address validator, uint256 amount);
     event Undelegate(address pool, address validator, uint256 amount);
 
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize(
         address[] calldata _initialVoters,
         uint256 _initialThreshold,

@@ -25,7 +25,9 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
         _;
     }
 
-    receive() external payable {}
+    constructor() {
+        _disableInitializers();
+    }
 
     function initialize(
         address _stakingAddress,
@@ -39,6 +41,8 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
         stakingAddress = _stakingAddress;
         stakeManagerAddress = _stakeManagerAddress;
     }
+
+    receive() external payable {}
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
