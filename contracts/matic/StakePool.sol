@@ -9,8 +9,9 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IValidatorShare.sol";
 import "./interfaces/IGovStakeManager.sol";
 import "./interfaces/IMaticStakePool.sol";
+import "../base/Ownable.sol";
 
-contract StakePool is Initializable, IMaticStakePool, UUPSUpgradeable {
+contract StakePool is Initializable, UUPSUpgradeable, Ownable, IMaticStakePool {
     // Custom errors to provide more descriptive revert messages.
     error NotStakeManager();
     error NotValidAddress();
@@ -38,7 +39,7 @@ contract StakePool is Initializable, IMaticStakePool, UUPSUpgradeable {
         govStakeManagerAddress = _govStakeManagerAddress;
     }
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyStakeManager {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function checkAndWithdrawRewards(
         uint256[] calldata _validators

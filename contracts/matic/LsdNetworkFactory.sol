@@ -9,7 +9,6 @@ import "../Timelock.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "../base/Ownable.sol";
 import "./interfaces/ILsdNetworkFactory.sol";
 
 contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory {
