@@ -119,7 +119,12 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
         lsdTokensOf[msg.sender].push(contracts._lsdToken);
 
         (bool success, bytes memory data) = contracts._stakePool.call(
-            abi.encodeWithSelector(StakePool.initialize.selector, contracts._stakeManager, govStakeManagerAddress)
+            abi.encodeWithSelector(
+                StakePool.initialize.selector,
+                contracts._stakeManager,
+                govStakeManagerAddress,
+                _networkAdmin
+            )
         );
         if (!success) {
             revert FailedToCall();

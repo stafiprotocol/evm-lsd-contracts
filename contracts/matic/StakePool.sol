@@ -31,12 +31,19 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IMaticStakePool {
         _disableInitializers();
     }
 
-    function initialize(address _stakeManagerAddress, address _govStakeManagerAddress) external initializer {
+    function initialize(
+        address _stakeManagerAddress,
+        address _govStakeManagerAddress,
+        address _owner
+    ) external initializer {
         if (_stakeManagerAddress == address(0)) revert NotValidAddress();
         if (_govStakeManagerAddress == address(0)) revert NotValidAddress();
+        if (_owner == address(0)) revert NotValidAddress();
 
         stakeManagerAddress = _stakeManagerAddress;
         govStakeManagerAddress = _govStakeManagerAddress;
+
+        _transferOwnership(_owner);
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
