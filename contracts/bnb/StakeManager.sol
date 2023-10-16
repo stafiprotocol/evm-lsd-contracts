@@ -100,6 +100,10 @@ contract StakeManager is Initializable, UUPSUpgradeable, Multisig, Manager {
         return IBnbStakePool(bondedPools.at(0)).getRelayerFee();
     }
 
+    function getWithdrawalRelayerFee() public pure returns (uint256) {
+        return CROSS_DISTRIBUTE_RELAY_FEE;
+    }
+
     function getValidatorsOf(address _poolAddress) public view returns (address[] memory validators) {
         validators = new address[](validatorsOf[_poolAddress].length());
         for (uint256 i = 0; i < validatorsOf[_poolAddress].length(); ++i) {
