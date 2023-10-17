@@ -1,6 +1,8 @@
 require("hardhat-contract-sizer")
 require("@nomicfoundation/hardhat-toolbox");
 require("@openzeppelin/hardhat-upgrades");
+require("@nomicfoundation/hardhat-foundry");
+
 // cp secrets-template.json secrets.json
 // WARN: make sure only using test mnemonic words
 const { mnemonic } = require('./secrets.json');
