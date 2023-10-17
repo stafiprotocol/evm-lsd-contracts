@@ -21,6 +21,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     error ZeroRedelegateAmount();
     error NotEnoughStakeAmount();
     error ZeroUnstakeAmount();
+    error ZeroWithdrawAmount();
     error UnstakeTimesExceedLimit();
     error AlreadyWithdrawed();
     error EraNotMatch();
@@ -214,9 +215,8 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
             emitUnstakeIndexList[i] = int256(unstakeIndex);
         }
 
-        if (totalWithdrawAmount > 0) {
-            IMaticStakePool(_poolAddress).withdrawForStaker(stakeTokenAddress, msg.sender, totalWithdrawAmount);
-        }
+        if (totalWithdrawAmount <= 0) revert ZeroWithdrawAmount();
+        IMaticStakePool(_poolAddress).withdrawForStaker(stakeTokenAddress, msg.sender, totalWithdrawAmount);
 
         emit Withdraw(msg.sender, _poolAddress, totalWithdrawAmount, emitUnstakeIndexList);
     }

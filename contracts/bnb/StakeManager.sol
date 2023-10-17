@@ -26,6 +26,7 @@ contract StakeManager is Initializable, UUPSUpgradeable, Multisig, Manager {
     error NotEnoughStakeAmount();
     error FailedToTransferBnb();
     error ZeroUnstakeAmount();
+    error ZeroWithdrawAmount();
     error NotEnoughFee();
     error UnstakeTimesExceedLimit();
     error AlreadyWithdrawed();
@@ -266,9 +267,9 @@ contract StakeManager is Initializable, UUPSUpgradeable, Multisig, Manager {
             emitUnstakeIndexList[i] = int256(unstakeIndex);
         }
 
-        if (totalWithdrawAmount > 0) {
-            IBnbStakePool(_poolAddress).withdrawForStaker(msg.sender, totalWithdrawAmount);
-        }
+        if (totalWithdrawAmount <= 0) revert ZeroWithdrawAmount();
+
+        IBnbStakePool(_poolAddress).withdrawForStaker(msg.sender, totalWithdrawAmount);
 
         emit Withdraw(msg.sender, _poolAddress, totalWithdrawAmount, emitUnstakeIndexList);
     }
