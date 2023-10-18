@@ -119,6 +119,7 @@ contract StakeManagerTest is Test {
     event Delegate(address pool, address validator, uint256 amount);
     error OutOfFund();
     error NotVoter();
+    error ZeroWithdrawAmount();
     function test_Stake() public {
         uint256 stakeAmount = 1e18;
         vm.expectEmit(false, false, false, true);
@@ -176,5 +177,9 @@ contract StakeManagerTest is Test {
         vm.prank(voters[2]);
         manager.newEra(poolList, rewardList, latestTimestampList);
         assertEq(manager.latestEra(), 1);
+
+        uint256 withdrawalRelayerFee = manager.getWithdrawalRelayerFee();
+        vm.expectRevert(ZeroWithdrawAmount.selector);
+        manager.withdraw{value: withdrawalRelayerFee}();
     }
 }
