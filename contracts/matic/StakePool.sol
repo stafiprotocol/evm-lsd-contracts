@@ -26,6 +26,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IMaticStakePool {
         _;
     }
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }

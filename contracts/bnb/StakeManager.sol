@@ -68,6 +68,7 @@ contract StakeManager is Initializable, UUPSUpgradeable, Multisig, Manager {
     event Delegate(address pool, address validator, uint256 amount);
     event Undelegate(address pool, address validator, uint256 amount);
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
