@@ -102,7 +102,7 @@ contract StakeManager is Initializable, UUPSUpgradeable, Multisig, Manager {
         return IBnbStakePool(bondedPools.at(0)).getRelayerFee();
     }
 
-    function getWithdrawalRelayerFee() public pure returns (uint256) {
+    function getWithdrawalRelayerFee() public virtual pure returns (uint256) {
         return CROSS_DISTRIBUTE_RELAY_FEE;
     }
 
@@ -243,7 +243,7 @@ contract StakeManager is Initializable, UUPSUpgradeable, Multisig, Manager {
     }
 
     function withdrawWithPool(address _poolAddress) public payable {
-        if (msg.value < CROSS_DISTRIBUTE_RELAY_FEE) revert NotEnoughFee();
+        if (msg.value < getWithdrawalRelayerFee()) revert NotEnoughFee();
 
         uint256 totalWithdrawAmount;
         uint256 length = unstakesOfUser[msg.sender].length();
@@ -398,7 +398,7 @@ contract StakeManager is Initializable, UUPSUpgradeable, Multisig, Manager {
             if (currentEra() == _era) {
                 uint256 claimedReward = IBnbStakePool(poolAddress).checkAndClaimReward();
                 if (claimedReward > 0) {
-                    claimedReward = claimedReward + CROSS_DISTRIBUTE_RELAY_FEE;
+                    claimedReward = claimedReward + getWithdrawalRelayerFee();
                     if (undistributedRewardOf[poolAddress] > claimedReward) {
                         undistributedRewardOf[poolAddress] = undistributedRewardOf[poolAddress] - claimedReward;
                     } else {
