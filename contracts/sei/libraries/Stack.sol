@@ -15,7 +15,7 @@ library Stack {
         uint256 stackFeeCommission;
         uint256 totalStackFee;
         address[] entrustedPools;
-        uint8 unbondingPeriod; // to facilitate testing
+        uint256 unbondingSeconds;
     }
 
     struct InitParams {
@@ -23,7 +23,7 @@ library Stack {
         address stackFeeReceiver;
         address govStakingAddr;
         address govDistributionAddr;
-        uint8 unbondingPeriod;
+        uint8 unbondingSeconds;
     }
 
     function init(State storage self, InitParams memory params) internal {
@@ -32,7 +32,7 @@ library Stack {
         self.govDistributionAddr = params.govDistributionAddr;
         self.stackFeeReceiver = params.stackFeeReceiver;
         self.stackFeeCommission = 1e17;
-        self.unbondingPeriod = params.unbondingPeriod;
+        self.unbondingSeconds = params.unbondingSeconds;
     }
 
     struct ConfigStackParams {

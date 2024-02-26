@@ -1,12 +1,8 @@
 pragma solidity 0.8.19;
 // SPDX-License-Identifier: GPL-3.0-only
 
-import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "./interfaces/ISeiStakePool.sol";
 import "./StakePool.sol";
 import "./libraries/NewContract.sol";
 import "./libraries/Pool.sol";
@@ -31,13 +27,11 @@ contract StakeManager is Initializable, UUPSUpgradeable {
     error NotEnoughAmountToUndelegate();
     error FailedToCall();
 
-    using SafeERC20 for IERC20;
-    using EnumerableSet for EnumerableSet.AddressSet;
-    using EnumerableSet for EnumerableSet.UintSet;
     using Pool for Pool.State;
     using Stack for Stack.State;
 
     address public stakePoolLogicAddress;
+
     Stack.State public stackState;
     mapping(address => Pool.State) public getPoolState;
 
@@ -58,6 +52,13 @@ contract StakeManager is Initializable, UUPSUpgradeable {
 
     modifier onlyStackAdmin() {
         if (msg.sender != stackState.admin) {
+            revert NotAuthorized();
+        }
+        _;
+    }
+
+    modifier onlyPoolAdmin(address _poolAddress) {
+        if (msg.sender != getPoolState[_poolAddress].admin) {
             revert NotAuthorized();
         }
         _;
@@ -94,8 +95,41 @@ contract StakeManager is Initializable, UUPSUpgradeable {
             revert FailedToCall();
         }
 
-        getPoolState[stakePool].init(_params, lsdToken, stakePool, stackState.unbondingPeriod);
+        getPoolState[stakePool].init(_params, lsdToken, stakePool, stackState.unbondingSeconds);
     }
 
-    // --------- helper ----------
+    function configPool(
+        address _poolAddress,
+        Pool.ConfigPoolParams memory _params
+    ) external onlyPoolAdmin(_poolAddress) {
+        getPoolState[_poolAddress].configPool(_params, stackState.unbondingSeconds);
+    }
+
+    function redelegate(
+        address _poolAddress,
+        string memory _srcValidator,
+        string memory _dstValidator,
+        uint256 _amount
+    ) external onlyPoolAdmin(_poolAddress) {
+        getPoolState[_poolAddress].redelegate(_srcValidator, _dstValidator, _amount);
+    }
+
+    // --------- user ----------
+    function stake(address _poolAddress, uint256 _stakeAmount) external payable {
+        getPoolState[_poolAddress].stake(_stakeAmount);
+    }
+
+    function unstake(address _poolAddress, uint256 _lsdTokenAmount) external {
+        getPoolState[_poolAddress].unstake(_lsdTokenAmount);
+    }
+
+    function withdraw(address _poolAddress) external {
+        getPoolState[_poolAddress].withdraw();
+    }
+
+    // --------- permissionless ----------
+
+    function newEra(address _poolAddress) external {
+        getPoolState[_poolAddress].newEra();
+    }
 }
