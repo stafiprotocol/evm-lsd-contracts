@@ -4,7 +4,8 @@ pragma solidity 0.8.19;
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "../base/Ownable.sol";
-import "./interfaces/IStaking.sol";
+import "./interfaces/IGovStaking.sol";
+import "./interfaces/IGovDistribution.sol";
 import "./interfaces/ISeiStakePool.sol";
 import "../LsdToken.sol";
 
@@ -17,6 +18,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
     uint256 public constant TEN_DECIMALS = 1e10;
 
     address public stakingAddress;
+    address public distributionAddress;
     address public stakeManagerAddress;
 
     modifier onlyStakeManager() {
@@ -31,6 +33,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
 
     function initialize(
         address _stakingAddress,
+        address _distributionAddress,
         address _stakeManagerAddress,
         address _owner
     ) external virtual initializer {
@@ -39,38 +42,49 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
 
         _transferOwnership(_owner);
         stakingAddress = _stakingAddress;
+        distributionAddress = _distributionAddress;
         stakeManagerAddress = _stakeManagerAddress;
     }
 
     receive() external payable {}
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+    function _authorizeUpgrade(address _newImplementation) internal override onlyOwner {}
 
-    function delegate(string memory validator, uint256 amount) external override onlyStakeManager {
-        IStaking(stakingAddress).delegate(validator, amount);
+    function delegate(string memory _validator, uint256 _amount) external override onlyStakeManager {
+        IGovStaking(stakingAddress).delegate(_validator, _amount);
     }
 
-    function undelegate(string memory validator, uint256 amount) external override onlyStakeManager {
-        IStaking(stakingAddress).undelegate(validator, amount);
+    function undelegate(string memory _validator, uint256 _amount) external override onlyStakeManager {
+        IGovStaking(stakingAddress).undelegate(_validator, _amount);
     }
 
     function redelegate(
-        string memory validatorSrc,
-        string memory validatorDst,
-        uint256 amount
+        string memory _validatorSrc,
+        string memory _validatorDst,
+        uint256 _amount
     ) external override onlyStakeManager {
-        IStaking(stakingAddress).redelegate(validatorSrc, validatorDst, amount);
+        IGovStaking(stakingAddress).redelegate(_validatorSrc, _validatorDst, _amount);
     }
 
-    function withdrawForStaker(address staker, uint256 amount) external override onlyStakeManager {
-        if (amount > 0) {
-            (bool result, ) = staker.call{value: amount}("");
+    function setWithdrawAddress(address _withdrawAddress) external override onlyStakeManager {
+        IGovDistribution(distributionAddress).setWithdrawAddress(_withdrawAddress);
+    }
+
+    function withdrawDelegationRewards(
+        string memory _validator
+    ) external override onlyStakeManager returns (bool success) {
+        return IGovDistribution(distributionAddress).withdrawDelegationRewards(_validator);
+    }
+
+    function withdrawForStaker(address _staker, uint256 _amount) external override onlyStakeManager {
+        if (_amount > 0) {
+            (bool result, ) = _staker.call{value: _amount}("");
             if (!result) revert FailedToWithdrawForStaker();
         }
     }
 
-    function getDelegated(string memory validator) external view override returns (uint256) {
-        return IStaking(stakingAddress).getDelegation(address(this), validator);
+    function getDelegated(string memory _validator) external view override returns (uint256) {
+        return IGovStaking(stakingAddress).getDelegation(address(this), _validator);
     }
 
     function version() external view returns (uint8) {

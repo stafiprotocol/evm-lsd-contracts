@@ -12,4 +12,8 @@ interface ISeiStakePool {
     function getDelegated(string memory validator) external view returns (uint256);
 
     function withdrawForStaker(address staker, uint256 amount) external;
+
+    function setWithdrawAddress(address withdrawAddress) external;
+
+    function withdrawDelegationRewards(string memory _validator) external returns (bool success);
 }
