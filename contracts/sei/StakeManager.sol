@@ -9,6 +9,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/ISeiStakePool.sol";
 import "../interfaces/ILsdToken.sol";
 import "../base/Manager.sol";
+import "./libraries/EnumerableStringSet.sol";
 
 contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     // Custom errors to provide more descriptive revert messages.
@@ -29,8 +30,9 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.UintSet;
+    using EnumerableStringSet for EnumerableStringSet.StringSet;
 
-    mapping(address => string[]) public validatorsOf;
+    mapping(address => EnumerableStringSet.StringSet) validatorsOf;
     mapping(address => address) public withdrawPoolOf;
 
     // events
@@ -63,7 +65,9 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     ) external virtual initializer {
         _initManagerParams(_lsdToken, _poolAddress, 4, 5 * 1e14);
 
-        validatorsOf[_poolAddress] = _validators;
+        for (uint256 i = 0; i < _validators.length; ++i) {
+            validatorsOf[_poolAddress].add(_validators[i]);
+        }
         withdrawPoolOf[_poolAddress] = _withdrawAddress;
 
         _transferOwnership(_owner);
@@ -77,7 +81,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         PoolInfo memory poolInfo = poolInfoOf[_poolAddress];
         if (!(poolInfo.active == 0 && poolInfo.bond == 0 && poolInfo.unbond == 0)) revert PoolNotEmpty();
 
-        string[] memory validators = validatorsOf[_poolAddress];
+        string[] memory validators = getValidatorsOf(_poolAddress);
         for (uint256 j = 0; j < validators.length; ++j) {
             if (ISeiStakePool(_poolAddress).getDelegated(validators[j]) != 0) revert DelegateNotEmpty();
         }
@@ -95,16 +99,16 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         string memory _dstValidator,
         uint256 _amount
     ) external onlyDelegationBalancer {
-        // if (!validatorsOf[_poolAddress].contains(_srcValidatorId)) revert ValidatorNotExist();
-        // if (_srcValidatorId == _dstValidatorId) revert ValidatorDuplicated();
-        // if (_amount == 0) revert ZeroRedelegateAmount();
-        // if (!validatorsOf[_poolAddress].contains(_dstValidatorId)) {
-        //     validatorsOf[_poolAddress].add(_dstValidatorId);
-        // }
-        // ISeiStakePool(_poolAddress).redelegate(_srcValidatorId, _dstValidatorId, _amount);
-        // if (ISeiStakePool(_poolAddress).getDelegated(_srcValidatorId) == 0) {
-        //     validatorsOf[_poolAddress].remove(_srcValidatorId);
-        // }
+        if (!validatorsOf[_poolAddress].contains(_srcValidator)) revert ValidatorNotExist();
+        if (keccak256(bytes(_srcValidator)) == keccak256(bytes(_dstValidator))) revert ValidatorDuplicated();
+        if (_amount == 0) revert ZeroRedelegateAmount();
+        if (!validatorsOf[_poolAddress].contains(_dstValidator)) {
+            validatorsOf[_poolAddress].add(_dstValidator);
+        }
+        ISeiStakePool(_poolAddress).redelegate(_srcValidator, _dstValidator, _amount);
+        if (ISeiStakePool(_poolAddress).getDelegated(_srcValidator) == 0) {
+            validatorsOf[_poolAddress].remove(_srcValidator);
+        }
     }
 
     // ----- staker operation
@@ -216,7 +220,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         for (uint256 i = 0; i < poolList.length; ++i) {
             address poolAddress = poolList[i];
 
-            string[] memory validators = validatorsOf[poolAddress];
+            string[] memory validators = getValidatorsOf(poolAddress);
 
             // newReward
             // uint256 poolNewReward = ISeiStakePool(poolAddress).checkAndWithdrawRewards(validators);
@@ -290,5 +294,13 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
 
     function version() external view returns (uint8) {
         return _getInitializedVersion();
+    }
+
+    function getValidatorsOf(address _poolAddress) public view returns (string[] memory validators) {
+        validators = new string[](validatorsOf[_poolAddress].length());
+        for (uint256 i = 0; i < validatorsOf[_poolAddress].length(); ++i) {
+            validators[i] = validatorsOf[_poolAddress].at(i);
+        }
+        return validators;
     }
 }
