@@ -25,12 +25,16 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     error UnstakeTimesExceedLimit();
     error AlreadyWithdrawed();
     error EraNotMatch();
-    error NotEnoughAmountToUndelegate();
+    
+    error WithdrawDelegationRewardsFailed();
 
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.UintSet;
     using EnumerableStringSet for EnumerableStringSet.StringSet;
+
+    address public factoryAddress;
+    uint256 public factoryCommissionRate;
 
     mapping(address => EnumerableStringSet.StringSet) validatorsOf;
     mapping(address => address) public withdrawPoolOf;
@@ -46,8 +50,8 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     );
     event Withdraw(address staker, address poolAddress, uint256 tokenAmount, int256[] unstakeIndexList);
     event ExecuteNewEra(uint256 indexed era, uint256 rate);
-    event Delegate(address pool, string validator, uint256 amount);
-    event Undelegate(address pool, string validator, uint256 amount);
+    event Delegate(address pool, string[] validators, uint256 amount);
+    event Undelegate(address pool, string[] validators, uint256 amount);
     event NewReward(address pool, uint256 amount);
     event NewClaimedNonce(address pool, uint256 validator, uint256 nonce);
 
@@ -61,9 +65,13 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         address _poolAddress,
         address _withdrawAddress,
         string[] memory _validators,
-        address _owner
+        address _owner,
+        address _factoryAddress
     ) external virtual initializer {
         _initManagerParams(_lsdToken, _poolAddress, 4, 5 * 1e14);
+
+        factoryAddress = _factoryAddress;
+        factoryCommissionRate = 10e16; // 10%
 
         for (uint256 i = 0; i < _validators.length; ++i) {
             validatorsOf[_poolAddress].add(_validators[i]);
@@ -84,9 +92,9 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         string[] memory validators = getValidatorsOf(_poolAddress);
         for (uint256 j = 0; j < validators.length; ++j) {
             if (ISeiStakePool(_poolAddress).getDelegated(validators[j]) != 0) revert DelegateNotEmpty();
-        }
 
-        delete validatorsOf[_poolAddress];
+            validatorsOf[_poolAddress].remove(validators[j]);
+        }
 
         if (!bondedPools.remove(_poolAddress)) revert PoolNotExist(_poolAddress);
     }
@@ -113,8 +121,8 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
 
     // ----- staker operation
 
-    function stake(uint256 _stakeAmount) external {
-        stakeWithPool(bondedPools.at(0), _stakeAmount);
+    function stake() external payable {
+        stakeWithPool(bondedPools.at(0));
     }
 
     function unstake(uint256 _lsdTokenAmount) external {
@@ -125,24 +133,25 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         withdrawWithPool(bondedPools.at(0));
     }
 
-    function stakeWithPool(address _poolAddress, uint256 _stakeAmount) public {
-        if (_stakeAmount < minStakeAmount) revert NotEnoughStakeAmount();
+    function stakeWithPool(address _poolAddress) public payable {
+        uint256 stakeAmount = msg.value;
+        if (stakeAmount < minStakeAmount) revert NotEnoughStakeAmount();
         if (!bondedPools.contains(_poolAddress)) revert PoolNotExist(_poolAddress);
 
-        uint256 lsdTokenAmount = (_stakeAmount * 1e18) / rate;
+        uint256 lsdTokenAmount = (stakeAmount * 1e18) / rate;
 
         // update pool
         PoolInfo storage poolInfo = poolInfoOf[_poolAddress];
-        poolInfo.bond = poolInfo.bond + _stakeAmount;
-        poolInfo.active = poolInfo.active + _stakeAmount;
+        poolInfo.bond = poolInfo.bond + stakeAmount;
+        poolInfo.active = poolInfo.active + stakeAmount;
 
-        // // transfer erc20 token
-        // IERC20(stakeTokenAddress).safeTransferFrom(msg.sender, _poolAddress, _stakeAmount);
+        (bool result, ) = _poolAddress.call{value: stakeAmount}("");
+        if (!result) revert FailedToCall();
 
         // mint lsdToken
         ILsdToken(lsdToken).mint(msg.sender, lsdTokenAmount);
 
-        emit Stake(msg.sender, _poolAddress, _stakeAmount, lsdTokenAmount);
+        emit Stake(msg.sender, _poolAddress, stakeAmount, lsdTokenAmount);
     }
 
     function unstakeWithPool(address _poolAddress, uint256 _lsdTokenAmount) public {
@@ -223,47 +232,31 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
             string[] memory validators = getValidatorsOf(poolAddress);
 
             // newReward
-            // uint256 poolNewReward = ISeiStakePool(poolAddress).checkAndWithdrawRewards(validators);
-            // emit NewReward(poolAddress, poolNewReward);
-            // totalNewReward = totalNewReward + poolNewReward;
+            if (!ISeiStakePool(poolAddress).withdrawDelegationRewardsMulti(validators)) {
+                revert WithdrawDelegationRewardsFailed();
+            }
+
+            uint256 poolNewReward = withdrawPoolOf[poolAddress].balance;
+            emit NewReward(poolAddress, poolNewReward);
+            totalNewReward = totalNewReward + poolNewReward;
 
             // bond or unbond
             PoolInfo memory poolInfo = poolInfoOf[poolAddress];
-            uint256 poolBondAndNewReward = poolInfo.bond;
+            uint256 poolBondAndNewReward = poolInfo.bond + poolNewReward;
             if (poolBondAndNewReward > poolInfo.unbond) {
                 uint256 needDelegate = poolBondAndNewReward - poolInfo.unbond;
-                ISeiStakePool(poolAddress).delegate(validators[0], needDelegate);
+                ISeiStakePool(poolAddress).delegateMulti(validators, needDelegate);
 
-                emit Delegate(poolAddress, validators[0], needDelegate);
+                emit Delegate(poolAddress, validators, needDelegate);
             } else if (poolBondAndNewReward < poolInfo.unbond) {
                 uint256 needUndelegate = poolInfo.unbond - poolBondAndNewReward;
+                ISeiStakePool(poolAddress).undelegateMulti(validators, needUndelegate);
 
-                for (uint256 j = 0; j < validators.length; ++j) {
-                    if (needUndelegate == 0) {
-                        break;
-                    }
-                    uint256 totalStaked = ISeiStakePool(poolAddress).getDelegated(validators[j]);
-
-                    uint256 unbondAmount;
-                    if (needUndelegate < totalStaked) {
-                        unbondAmount = needUndelegate;
-                        needUndelegate = 0;
-                    } else {
-                        unbondAmount = totalStaked;
-                        needUndelegate = needUndelegate - totalStaked;
-                    }
-
-                    if (unbondAmount > 0) {
-                        ISeiStakePool(poolAddress).undelegate(validators[j], unbondAmount);
-
-                        emit Undelegate(poolAddress, validators[j], unbondAmount);
-                    }
-                }
-                if (needUndelegate != 0) revert NotEnoughAmountToUndelegate();
+                emit Undelegate(poolAddress, validators, needUndelegate);
             }
 
             // cal total active
-            uint256 newPoolActive = 0;
+            uint256 newPoolActive = ISeiStakePool(poolAddress).getTotalDelegated(validators);
             newTotalActive = newTotalActive + newPoolActive;
 
             // update pool state
@@ -278,10 +271,17 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         // cal protocol fee
         if (totalNewReward > 0) {
             uint256 lsdTokenProtocolFee = (totalNewReward * protocolFeeCommission) / rate;
+            uint256 factoryFee = (lsdTokenProtocolFee * factoryCommissionRate) / 1e18;
+            lsdTokenProtocolFee = lsdTokenProtocolFee - factoryFee;
+
             if (lsdTokenProtocolFee > 0) {
                 totalProtocolFee = totalProtocolFee + lsdTokenProtocolFee;
                 // mint lsdToken
                 ILsdToken(lsdToken).mint(address(this), lsdTokenProtocolFee);
+            }
+
+            if (factoryFee > 0) {
+                ILsdToken(lsdToken).mint(factoryAddress, factoryFee);
             }
         }
 

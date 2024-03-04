@@ -11,8 +11,13 @@ import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/ILsdNetworkFactory.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory {
+    using SafeERC20 for IERC20;
+    using EnumerableSet for EnumerableSet.AddressSet;
+
     address public govStakingAddress;
     address public govDistributionAddress;
 
@@ -22,7 +27,9 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
 
     address public factoryAdmin;
     mapping(address => NetworkContracts) public networkContractsOfLsdToken;
+    mapping(address => uint256) public totalClaimedLsdToken;
     mapping(address => address[]) private lsdTokensOf;
+    EnumerableSet.AddressSet private entrustedLsdTokens;
 
     modifier onlyFactoryAdmin() {
         if (msg.sender != factoryAdmin) {
@@ -87,6 +94,28 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
         stakePoolLogicAddress = _stakePoolLogicAddress;
     }
 
+    function factoryClaim(address _lsdToken, address _recipient, uint256 _amount) external onlyFactoryAdmin {
+        IERC20(_lsdToken).transfer(_recipient, _amount);
+        totalClaimedLsdToken[_lsdToken] += _amount;
+    }
+
+    function getEntrustedLsdTokens() public view returns (address[] memory) {
+        uint256 length = entrustedLsdTokens.length();
+        address[] memory list = new address[](length);
+        for (uint256 i = 0; i < length; i++) {
+            list[i] = entrustedLsdTokens.at(i);
+        }
+        return list;
+    }
+
+    function addEntrustedLsdToken(address _lsdToken) external onlyFactoryAdmin returns (bool) {
+        return entrustedLsdTokens.add(_lsdToken);
+    }
+
+    function removeEntrustedLsdToken(address _lsdToken) external onlyFactoryAdmin returns (bool) {
+        return entrustedLsdTokens.remove(_lsdToken);
+    }
+
     // ------------ user ------------
 
     function createLsdNetwork(
@@ -123,8 +152,9 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
         (bool success, bytes memory data) = contracts._stakePool.call(
             abi.encodeWithSelector(
                 StakePool.initialize.selector,
-                contracts._stakeManager,
                 govStakingAddress,
+                govDistributionAddress,
+                contracts._stakeManager,
                 _networkAdmin
             )
         );
@@ -146,7 +176,8 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
                 contracts._stakePool,
                 contracts._withdrawPool,
                 _validators,
-                _networkAdmin
+                _networkAdmin,
+                this
             )
         );
         if (!success) {
