@@ -1,6 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
-
-// SPDX-License-Identifier: GPL-3.0-only
 
 interface IMaticStakePool {
     function delegate(uint256 validator, uint256 amount) external returns (uint256 amountToDeposit);

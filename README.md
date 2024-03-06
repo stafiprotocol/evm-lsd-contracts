@@ -64,3 +64,11 @@ forge --help
 anvil --help
 cast --help
 ```
+
+## License
+
+The primary license for EVM LSD Contracts is the Business Source License 1.1 (BUSL-1.1), see [LICENSE](./LICENSE). Minus the following exceptions:
+
+- Some interfaces and libraries have a GPL license
+
+Each of these files states their license type.

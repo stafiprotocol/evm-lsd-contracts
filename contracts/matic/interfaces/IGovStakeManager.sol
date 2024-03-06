@@ -1,6 +1,5 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
-
-// SPDX-License-Identifier: GPL-3.0-only
 
 interface IGovStakeManager {
     function migrateDelegation(uint256 fromValidatorId, uint256 toValidatorId, uint256 amount) external;
