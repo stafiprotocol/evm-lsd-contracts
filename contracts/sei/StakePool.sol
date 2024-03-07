@@ -14,6 +14,8 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
     error NotStakeManager();
     error NotValidAddress();
     error FailedToWithdrawForStaker();
+    error FailedToDelegate();
+    error FailedToUndelegate();
     error NotEnoughAmountToUndelegate();
 
     event Delegate(string validator, uint256 amount);
@@ -70,15 +72,17 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
 
     function delegateMulti(string[] memory _validators, uint256 _amount) external override onlyStakeManager {
         uint256 averageAmount = _amount / _validators.length;
+        uint256 tail = _amount % _validators.length;
+
         for (uint256 i = 0; i < _validators.length; ++i) {
-            if (i == _validators.length - 1) {
-                IGovStaking(stakingAddress).delegate(
-                    _validators[i],
-                    _amount - (averageAmount * (_validators.length - 1))
-                );
-            } else {
-                IGovStaking(stakingAddress).delegate(_validators[i], averageAmount);
+            uint256 amount = averageAmount;
+            if (i == 0) {
+                amount = averageAmount + tail;
             }
+            if (!IGovStaking(stakingAddress).delegate(_validators[i], amount / 1e12)) {
+                revert FailedToDelegate();
+            }
+            delegatedAmountOfValidator[_validators[i]] += amount;
         }
     }
 
@@ -94,19 +98,21 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
             if (needUndelegate < govDelegated) {
                 uint256 willUndelegate = needUndelegate;
 
-                delegatedAmountOfValidator[val] = delegatedAmountOfValidator[val] - willUndelegate;
-                IGovStaking(stakingAddress).undelegate(val, willUndelegate);
+                if (!IGovStaking(stakingAddress).undelegate(val, willUndelegate / 1e12)) {
+                    revert FailedToUndelegate();
+                }
+                delegatedAmountOfValidator[val] -= willUndelegate;
+                needUndelegate = 0;
 
                 emit Undelegate(val, willUndelegate);
-
-                needUndelegate = 0;
             } else {
-                delegatedAmountOfValidator[val] = delegatedAmountOfValidator[val] - govDelegated;
-                IGovStaking(stakingAddress).undelegate(val, govDelegated);
+                if (!IGovStaking(stakingAddress).undelegate(val, govDelegated / 1e12)) {
+                    revert FailedToUndelegate();
+                }
+                delegatedAmountOfValidator[val] -= govDelegated;
+                needUndelegate = needUndelegate - govDelegated;
 
                 emit Undelegate(val, govDelegated);
-
-                needUndelegate = needUndelegate - govDelegated;
             }
         }
         if (needUndelegate > 0) {
@@ -119,11 +125,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
         string memory _validatorDst,
         uint256 _amount
     ) external override onlyStakeManager {
-        IGovStaking(stakingAddress).redelegate(_validatorSrc, _validatorDst, _amount);
-    }
-
-    function setWithdrawAddress(address _withdrawAddress) external override onlyStakeManager {
-        IGovDistribution(distributionAddress).setWithdrawAddress(_withdrawAddress);
+        IGovStaking(stakingAddress).redelegate(_validatorSrc, _validatorDst, _amount / 1e12);
     }
 
     function withdrawDelegationRewards(
@@ -136,10 +138,15 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
         string[] memory _validators
     ) external override onlyStakeManager returns (bool success) {
         for (uint256 i = 0; i < _validators.length; ++i) {
+            if (delegatedAmountOfValidator[_validators[i]] == 0) {
+                continue;
+            }
+
             if (!IGovDistribution(distributionAddress).withdrawDelegationRewards(_validators[i])) {
                 return false;
             }
         }
+        return true;
     }
 
     function withdrawForStaker(address _staker, uint256 _amount) external override onlyStakeManager {

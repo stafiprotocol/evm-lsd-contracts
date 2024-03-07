@@ -1,37 +1,38 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.19;
 
-import {Test, console2} from "forge-std/Test.sol";
+import {Test, console, Vm} from "forge-std/Test.sol";
 import {StakePoolManager} from "../../contracts/base/StakePoolManager.sol";
 import {StakeManager} from "../../contracts/sei/StakeManager.sol";
 import {StakePool} from "../../contracts/sei/StakePool.sol";
-import {WithdrawPool} from "../../contracts/sei/WithdrawPool.sol";
 import {LsdToken} from "../../contracts/LsdToken.sol";
 import {LsdNetworkFactory} from "../../contracts/sei/LsdNetworkFactory.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-contract StakeManagerTest is Test {
+contract FactoryTest is Test {
     LsdNetworkFactory public factory;
     address admin = address(1);
-    string fakeValidator = "seivaloper1g4yem7u3057y0dzl366pam9zz7p3pap302srty";
+    // string fakeValidator = "seivaloper1g4yem7u3057y0dzl366pam9zz7p3pap302srty";
+    string fakeValidator = "seivaloper1kl4ca5juj8u54f8hyv45979508tr67uacazs9x";
 
     function setUp() public {
+        address govStakingAddress = 0x0000000000000000000000000000000000001005;
+        address govDistributionAddress = 0x0000000000000000000000000000000000001007;
+
         StakeManager stakeManagerLogic = new StakeManager();
 
         StakePool stakePoolLogic = new StakePool();
 
-        WithdrawPool withdrawPoolLogic = new WithdrawPool();
-
         LsdNetworkFactory factoryLogic = new LsdNetworkFactory();
+
         factory = LsdNetworkFactory(address(new ERC1967Proxy(address(factoryLogic), "")));
 
         factory.initialize(
             admin,
-            admin,
-            admin,
+            govStakingAddress,
+            govDistributionAddress,
             address(stakeManagerLogic),
-            address(stakePoolLogic),
-            address(withdrawPoolLogic)
+            address(stakePoolLogic)
         );
     }
 
@@ -50,5 +51,32 @@ contract StakeManagerTest is Test {
         vals[0] = fakeValidator;
 
         factory.createLsdNetwork("name", "symbol", vals);
+
+        address lsdToken = factory.lsdTokensOfCreater(address(this))[0];
+        (address stakeManagerAddr, address stakePoolAddr, address c, uint256 d) = factory.networkContractsOfLsdToken(
+            lsdToken
+        );
+
+        console.log("stakeManger %s", stakeManagerAddr);
+        console.log("stakePool %s", stakePoolAddr);
+
+        address payable stakePoolAddrPayable = payable(stakePoolAddr);
+
+        StakePool stakePool = StakePool(stakePoolAddrPayable);
+        console.log("stakePool distribution %s", stakePool.distributionAddress());
+        console.log("stakePool staking %s", stakePool.stakingAddress());
+        console.log("stakePool stakeManager %s", stakePool.stakeManagerAddress());
+
+        StakeManager stakeManager = StakeManager(stakeManagerAddr);
+
+        stakeManager.stake{value: 2e12}();
+
+        console.log("stakePool balance %d", address(stakePool).balance);
+        console.log("stakeManager latest era %d", stakeManager.latestEra());
+        console.log("stakeManager current era %d", stakeManager.currentEra());
+
+        stakeManager.setEraParams(stakeManager.eraSeconds(), stakeManager.eraOffset() - 1);
+
+        stakeManager.newEra();
     }
 }

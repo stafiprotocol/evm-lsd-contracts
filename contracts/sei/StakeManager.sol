@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.19;
 
-import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -25,10 +24,9 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     error UnstakeTimesExceedLimit();
     error AlreadyWithdrawed();
     error EraNotMatch();
-    
-    error WithdrawDelegationRewardsFailed();
+    error WithdrawRewardsFailed();
+    error BalanceNotMatch();
 
-    using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.UintSet;
     using EnumerableStringSet for EnumerableStringSet.StringSet;
@@ -37,7 +35,6 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     uint256 public factoryCommissionRate;
 
     mapping(address => EnumerableStringSet.StringSet) validatorsOf;
-    mapping(address => address) public withdrawPoolOf;
 
     // events
     event Stake(address staker, address poolAddress, uint256 tokenAmount, uint256 lsdTokenAmount);
@@ -63,12 +60,13 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     function initialize(
         address _lsdToken,
         address _poolAddress,
-        address _withdrawAddress,
         string[] memory _validators,
         address _owner,
         address _factoryAddress
     ) external virtual initializer {
         _initManagerParams(_lsdToken, _poolAddress, 4, 5 * 1e14);
+
+        minStakeAmount = 1e12;
 
         factoryAddress = _factoryAddress;
         factoryCommissionRate = 10e16; // 10%
@@ -76,11 +74,8 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         for (uint256 i = 0; i < _validators.length; ++i) {
             validatorsOf[_poolAddress].add(_validators[i]);
         }
-        withdrawPoolOf[_poolAddress] = _withdrawAddress;
 
         _transferOwnership(_owner);
-
-        ISeiStakePool(_poolAddress).setWithdrawAddress(_withdrawAddress);
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
@@ -231,12 +226,17 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
 
             string[] memory validators = getValidatorsOf(poolAddress);
 
-            // newReward
+            // withdraw reward
+            uint256 preWithdrawPoolBalance = poolAddress.balance;
             if (!ISeiStakePool(poolAddress).withdrawDelegationRewardsMulti(validators)) {
-                revert WithdrawDelegationRewardsFailed();
+                revert WithdrawRewardsFailed();
+            }
+            uint256 postWithdrawPoolBalance = poolAddress.balance;
+            if (preWithdrawPoolBalance < postWithdrawPoolBalance) {
+                revert BalanceNotMatch();
             }
 
-            uint256 poolNewReward = withdrawPoolOf[poolAddress].balance;
+            uint256 poolNewReward = preWithdrawPoolBalance - postWithdrawPoolBalance;
             emit NewReward(poolAddress, poolNewReward);
             totalNewReward = totalNewReward + poolNewReward;
 

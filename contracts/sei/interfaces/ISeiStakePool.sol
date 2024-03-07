@@ -10,8 +10,6 @@ interface ISeiStakePool {
 
     function withdrawForStaker(address staker, uint256 amount) external;
 
-    function setWithdrawAddress(address withdrawAddress) external;
-
     function withdrawDelegationRewards(string memory _validator) external returns (bool success);
 
     function delegateMulti(string[] memory _validators, uint256 _amount) external;

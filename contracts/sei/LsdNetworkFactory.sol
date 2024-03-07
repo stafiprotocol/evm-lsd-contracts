@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 
 import "./StakePool.sol";
-import "./WithdrawPool.sol";
 import "./StakeManager.sol";
 import "../LsdToken.sol";
 import "../Timelock.sol";
@@ -22,7 +21,6 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
 
     address public stakeManagerLogicAddress;
     address public stakePoolLogicAddress;
-    address public withdrawPoolLogicAddress;
 
     address public factoryAdmin;
     mapping(address => NetworkContracts) public networkContractsOfLsdToken;
@@ -47,8 +45,7 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
         address _govStakingAddress,
         address _govDistributionAddress,
         address _stakeManagerLogicAddress,
-        address _stakePoolLogicAddress,
-        address _withdrawPoolLogicAddress
+        address _stakePoolLogicAddress
     ) external initializer {
         if (_factoryAdmin == address(0)) {
             revert AddressNotAllowed();
@@ -59,7 +56,6 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
         govDistributionAddress = _govDistributionAddress;
         stakeManagerLogicAddress = _stakeManagerLogicAddress;
         stakePoolLogicAddress = _stakePoolLogicAddress;
-        withdrawPoolLogicAddress = _withdrawPoolLogicAddress;
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyFactoryAdmin {}
@@ -94,7 +90,7 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
     }
 
     function factoryClaim(address _lsdToken, address _recipient, uint256 _amount) external onlyFactoryAdmin {
-        IERC20(_lsdToken).transfer(_recipient, _amount);
+        IERC20(_lsdToken).safeTransfer(_recipient, _amount);
         totalClaimedLsdToken[_lsdToken] += _amount;
     }
 
@@ -161,19 +157,11 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
             revert FailedToCall();
         }
 
-        (success, data) = contracts._withdrawPool.call(
-            abi.encodeWithSelector(WithdrawPool.initialize.selector, contracts._stakeManager, _networkAdmin)
-        );
-        if (!success) {
-            revert FailedToCall();
-        }
-
         (success, data) = contracts._stakeManager.call(
             abi.encodeWithSelector(
                 StakeManager.initialize.selector,
                 contracts._lsdToken,
                 contracts._stakePool,
-                contracts._withdrawPool,
                 _validators,
                 _networkAdmin,
                 this
@@ -196,10 +184,9 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
     ) private returns (NetworkContracts memory) {
         address stakeManager = deploy(stakeManagerLogicAddress);
         address stakePool = deploy(stakePoolLogicAddress);
-        address withdrawPool = deploy(withdrawPoolLogicAddress);
 
         address lsdToken = address(new LsdToken(stakeManager, _lsdTokenName, _lsdTokenSymbol));
 
-        return NetworkContracts(stakeManager, stakePool, withdrawPool, lsdToken, block.number);
+        return NetworkContracts(stakeManager, stakePool, lsdToken, block.number);
     }
 }

@@ -7,7 +7,6 @@ interface ILsdNetworkFactory is Errors {
     struct NetworkContracts {
         address _stakeManager;
         address _stakePool;
-        address _withdrawPool;
         address _lsdToken;
         uint256 _block;
     }

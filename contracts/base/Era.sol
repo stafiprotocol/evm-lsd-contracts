@@ -25,8 +25,8 @@ abstract contract Era is Ownable {
         if (eraSeconds == 0) revert NotInitialized();
         if (_eraSeconds < MIN_ERA_SECONDS) revert LessThanMinEraSeconds(_eraSeconds);
         if (_eraSeconds > MAX_ERA_SECONDS) revert GreaterThanMaxEraSeconds(_eraSeconds);
-        if (currentEra() != block.timestamp / _eraSeconds - _eraOffset)
-            revert WrongEraParameters(_eraSeconds, _eraOffset);
+        // if (currentEra() != block.timestamp / _eraSeconds - _eraOffset)
+        //     revert WrongEraParameters(_eraSeconds, _eraOffset);
 
         eraSeconds = _eraSeconds;
         eraOffset = _eraOffset;
