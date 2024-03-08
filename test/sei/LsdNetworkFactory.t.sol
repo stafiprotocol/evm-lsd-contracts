@@ -16,9 +16,6 @@ contract FactoryTest is Test {
     string fakeValidator = "seivaloper1kl4ca5juj8u54f8hyv45979508tr67uacazs9x";
 
     function setUp() public {
-        address govStakingAddress = 0x0000000000000000000000000000000000001005;
-        address govDistributionAddress = 0x0000000000000000000000000000000000001007;
-
         StakeManager stakeManagerLogic = new StakeManager();
 
         StakePool stakePoolLogic = new StakePool();
@@ -27,13 +24,7 @@ contract FactoryTest is Test {
 
         factory = LsdNetworkFactory(address(new ERC1967Proxy(address(factoryLogic), "")));
 
-        factory.initialize(
-            admin,
-            govStakingAddress,
-            govDistributionAddress,
-            address(stakeManagerLogic),
-            address(stakePoolLogic)
-        );
+        factory.initialize(admin, address(stakeManagerLogic), address(stakePoolLogic));
     }
 
     event Stake(address staker, address poolAddress, uint256 tokenAmount, uint256 lsdTokenAmount);
@@ -63,8 +54,6 @@ contract FactoryTest is Test {
         address payable stakePoolAddrPayable = payable(stakePoolAddr);
 
         StakePool stakePool = StakePool(stakePoolAddrPayable);
-        console.log("stakePool distribution %s", stakePool.distributionAddress());
-        console.log("stakePool staking %s", stakePool.stakingAddress());
         console.log("stakePool stakeManager %s", stakePool.stakeManagerAddress());
 
         StakeManager stakeManager = StakeManager(stakeManagerAddr);

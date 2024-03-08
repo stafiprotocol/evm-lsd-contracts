@@ -16,9 +16,6 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
     using SafeERC20 for IERC20;
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    address public govStakingAddress;
-    address public govDistributionAddress;
-
     address public stakeManagerLogicAddress;
     address public stakePoolLogicAddress;
 
@@ -42,8 +39,6 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
 
     function initialize(
         address _factoryAdmin,
-        address _govStakingAddress,
-        address _govDistributionAddress,
         address _stakeManagerLogicAddress,
         address _stakePoolLogicAddress
     ) external initializer {
@@ -52,8 +47,6 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
         }
 
         factoryAdmin = _factoryAdmin;
-        govStakingAddress = _govStakingAddress;
-        govDistributionAddress = _govDistributionAddress;
         stakeManagerLogicAddress = _stakeManagerLogicAddress;
         stakePoolLogicAddress = _stakePoolLogicAddress;
     }
@@ -145,13 +138,7 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
         lsdTokensOf[msg.sender].push(contracts._lsdToken);
 
         (bool success, bytes memory data) = contracts._stakePool.call(
-            abi.encodeWithSelector(
-                StakePool.initialize.selector,
-                govStakingAddress,
-                govDistributionAddress,
-                contracts._stakeManager,
-                _networkAdmin
-            )
+            abi.encodeWithSelector(StakePool.initialize.selector, contracts._stakeManager, _networkAdmin)
         );
         if (!success) {
             revert FailedToCall();

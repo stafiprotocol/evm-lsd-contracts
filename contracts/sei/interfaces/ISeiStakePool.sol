@@ -2,21 +2,15 @@
 pragma solidity 0.8.19;
 
 interface ISeiStakePool {
-    function delegate(string memory validator, uint256 amount) external;
-
-    function undelegate(string memory validator, uint256 amount) external;
-
     function redelegate(string memory validatorSrc, string memory validatorDst, uint256 amount) external;
 
     function withdrawForStaker(address staker, uint256 amount) external;
-
-    function withdrawDelegationRewards(string memory _validator) external returns (bool success);
 
     function delegateMulti(string[] memory _validators, uint256 _amount) external;
 
     function undelegateMulti(string[] memory _validators, uint256 _amount) external;
 
-    function withdrawDelegationRewardsMulti(string[] memory _validators) external returns (bool success);
+    function withdrawDelegationRewardsMulti(string[] memory _validators) external returns (uint256);
 
     function getDelegated(string memory validator) external view returns (uint256);
 

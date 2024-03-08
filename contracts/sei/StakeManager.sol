@@ -31,6 +31,8 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     using EnumerableSet for EnumerableSet.UintSet;
     using EnumerableStringSet for EnumerableStringSet.StringSet;
 
+    uint256 constant TWELVE_DECIMALS = 1e12;
+
     address public factoryAddress;
     uint256 public factoryCommissionRate;
 
@@ -66,7 +68,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     ) external virtual initializer {
         _initManagerParams(_lsdToken, _poolAddress, 4, 5 * 1e14);
 
-        minStakeAmount = 1e12;
+        minStakeAmount = TWELVE_DECIMALS;
 
         factoryAddress = _factoryAddress;
         factoryCommissionRate = 10e16; // 10%
@@ -129,7 +131,8 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     }
 
     function stakeWithPool(address _poolAddress) public payable {
-        uint256 stakeAmount = msg.value;
+        uint256 stakeAmount = (msg.value / TWELVE_DECIMALS) * TWELVE_DECIMALS;
+
         if (stakeAmount < minStakeAmount) revert NotEnoughStakeAmount();
         if (!bondedPools.contains(_poolAddress)) revert PoolNotExist(_poolAddress);
 
@@ -155,11 +158,12 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         if (unstakesOfUser[msg.sender].length() >= UNSTAKE_TIMES_LIMIT) revert UnstakeTimesExceedLimit();
 
         uint256 tokenAmount = (_lsdTokenAmount * rate) / 1e18;
+        tokenAmount = (tokenAmount / TWELVE_DECIMALS) * TWELVE_DECIMALS;
 
         // update pool
         PoolInfo storage poolInfo = poolInfoOf[_poolAddress];
-        poolInfo.unbond = poolInfo.unbond + tokenAmount;
-        poolInfo.active = poolInfo.active - tokenAmount;
+        poolInfo.unbond += tokenAmount;
+        poolInfo.active -= tokenAmount;
 
         // burn lsdToken
         ERC20Burnable(lsdToken).burnFrom(msg.sender, _lsdTokenAmount);
@@ -227,16 +231,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
             string[] memory validators = getValidatorsOf(poolAddress);
 
             // withdraw reward
-            uint256 preWithdrawPoolBalance = poolAddress.balance;
-            if (!ISeiStakePool(poolAddress).withdrawDelegationRewardsMulti(validators)) {
-                revert WithdrawRewardsFailed();
-            }
-            uint256 postWithdrawPoolBalance = poolAddress.balance;
-            if (preWithdrawPoolBalance < postWithdrawPoolBalance) {
-                revert BalanceNotMatch();
-            }
-
-            uint256 poolNewReward = preWithdrawPoolBalance - postWithdrawPoolBalance;
+            uint256 poolNewReward = ISeiStakePool(poolAddress).withdrawDelegationRewardsMulti(validators);
             emit NewReward(poolAddress, poolNewReward);
             totalNewReward = totalNewReward + poolNewReward;
 
