@@ -8,6 +8,7 @@ import "./interfaces/IGovStaking.sol";
 import "./interfaces/IGovDistribution.sol";
 import "./interfaces/ISeiStakePool.sol";
 import "../LsdToken.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
     // Custom errors to provide more descriptive revert messages.
@@ -25,18 +26,18 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
     event Undelegate(string validator, uint256 amount);
     event Redelegate(string srcValidator, string dstValidator, uint256 amount);
 
+    using EnumerableSet for EnumerableSet.UintSet;
+
     uint256 constant TWELVE_DECIMALS = 1e12;
+    uint256 constant MAX_ENTRIES = 7;
+    uint256 constant UNBONDING_SECONDS = 1814400;
     address constant STAKING_PRECOMPILE_ADDRESS = 0x0000000000000000000000000000000000001005;
     address constant DISTR_PRECOMPILE_ADDRESS = 0x0000000000000000000000000000000000001007;
 
     address public stakeManagerAddress;
 
-    uint256 unbondingTimesLimit;
-    uint256 unbondingDuration;
-
     mapping(string => uint256) delegatedAmountOfValidator; //  validator => amount(decimals 6)
-    mapping(string => uint256[]) undelegateTimestamps; //  validator => undelegateTimestamp[]
-    mapping(string => mapping(string => uint256)) redelegateTimestamps; // srcValidator => dstValidator => undelegateTimestamp[]
+    mapping(string => EnumerableSet.UintSet) undelegateTimestampsOfValidator; //  validator => undelegateTimestamp[]
 
     modifier onlyStakeManager() {
         if (stakeManagerAddress != msg.sender) revert NotStakeManager();
@@ -95,29 +96,32 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
             }
             string memory val = _validators[i];
 
-            uint256 govDelegated = delegatedAmountOfValidator[val];
-            if (needUndelegate < govDelegated) {
-                uint256 willUndelegate = needUndelegate;
-
-                if (!IGovStaking(STAKING_PRECOMPILE_ADDRESS).undelegate(val, willUndelegate)) {
-                    revert FailedToUndelegate();
+            for (uint256 j = 0; j < undelegateTimestampsOfValidator[val].length(); ++j) {
+                uint256 value = undelegateTimestampsOfValidator[val].at(j);
+                if ((value + UNBONDING_SECONDS) < block.timestamp) {
+                    undelegateTimestampsOfValidator[val].remove(value);
                 }
-                needUndelegate = 0;
-
-                delegatedAmountOfValidator[val] -= willUndelegate;
-
-                emit Undelegate(val, willUndelegate * TWELVE_DECIMALS);
-            } else {
-                if (!IGovStaking(STAKING_PRECOMPILE_ADDRESS).undelegate(val, govDelegated)) {
-                    revert FailedToUndelegate();
-                }
-                needUndelegate -= govDelegated;
-
-                delegatedAmountOfValidator[val] -= govDelegated;
-
-                emit Undelegate(val, govDelegated * TWELVE_DECIMALS);
             }
+
+            if (undelegateTimestampsOfValidator[val].length() >= MAX_ENTRIES) {
+                continue;
+            }
+
+            uint256 govDelegated = delegatedAmountOfValidator[val];
+
+            uint256 willUndelegate = needUndelegate < govDelegated ? needUndelegate : govDelegated;
+
+            if (!IGovStaking(STAKING_PRECOMPILE_ADDRESS).undelegate(val, willUndelegate)) {
+                revert FailedToUndelegate();
+            }
+            needUndelegate -= willUndelegate;
+
+            delegatedAmountOfValidator[val] -= willUndelegate;
+            undelegateTimestampsOfValidator[val].add(block.timestamp);
+
+            emit Undelegate(val, willUndelegate * TWELVE_DECIMALS);
         }
+
         if (needUndelegate > 0) {
             revert NotEnoughAmountToUndelegate();
         }

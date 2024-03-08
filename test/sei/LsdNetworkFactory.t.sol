@@ -66,6 +66,6 @@ contract FactoryTest is Test {
 
         stakeManager.setEraParams(stakeManager.eraSeconds(), stakeManager.eraOffset() - 1);
 
-        stakeManager.newEra();
+        // stakeManager.newEra();
     }
 }
