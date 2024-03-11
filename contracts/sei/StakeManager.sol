@@ -32,6 +32,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     using EnumerableStringSet for EnumerableStringSet.StringSet;
 
     uint256 constant TWELVE_DECIMALS = 1e12;
+    uint256 constant EIGHTEEN_DECIMALS = 1e18;
 
     address public factoryAddress;
     uint256 public factoryCommissionRate;
@@ -136,7 +137,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         if (stakeAmount < minStakeAmount) revert NotEnoughStakeAmount();
         if (!bondedPools.contains(_poolAddress)) revert PoolNotExist(_poolAddress);
 
-        uint256 lsdTokenAmount = (stakeAmount * 1e18) / rate;
+        uint256 lsdTokenAmount = (stakeAmount * EIGHTEEN_DECIMALS) / rate;
 
         // update pool
         PoolInfo storage poolInfo = poolInfoOf[_poolAddress];
@@ -157,7 +158,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         if (!bondedPools.contains(_poolAddress)) revert PoolNotExist(_poolAddress);
         if (unstakesOfUser[msg.sender].length() >= UNSTAKE_TIMES_LIMIT) revert UnstakeTimesExceedLimit();
 
-        uint256 tokenAmount = (_lsdTokenAmount * rate) / 1e18;
+        uint256 tokenAmount = (_lsdTokenAmount * rate) / EIGHTEEN_DECIMALS;
         tokenAmount = (tokenAmount / TWELVE_DECIMALS) * TWELVE_DECIMALS;
 
         // update pool
@@ -266,7 +267,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         // cal protocol fee
         if (totalNewReward > 0) {
             uint256 lsdTokenProtocolFee = (totalNewReward * protocolFeeCommission) / rate;
-            uint256 factoryFee = (lsdTokenProtocolFee * factoryCommissionRate) / 1e18;
+            uint256 factoryFee = (lsdTokenProtocolFee * factoryCommissionRate) / EIGHTEEN_DECIMALS;
             lsdTokenProtocolFee = lsdTokenProtocolFee - factoryFee;
 
             if (lsdTokenProtocolFee > 0) {
@@ -281,7 +282,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         }
 
         // update rate
-        uint256 newRate = (newTotalActive * 1e18) / (ERC20Burnable(lsdToken).totalSupply());
+        uint256 newRate = (newTotalActive * EIGHTEEN_DECIMALS) / (ERC20Burnable(lsdToken).totalSupply());
         _setEraRate(_era, newRate);
 
         emit ExecuteNewEra(_era, newRate);

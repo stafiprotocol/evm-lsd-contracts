@@ -21,6 +21,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
     error FailedToWithdrawRewards();
     error FailedToWithdrawForStaker();
     error NotEnoughAmountToUndelegate();
+    error ValidatorsEmpty();
 
     event Delegate(string validator, uint256 amount);
     event Undelegate(string validator, uint256 amount);
@@ -38,6 +39,8 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
 
     mapping(string => uint256) delegatedAmountOfValidator; //  validator => amount(decimals 6)
     mapping(string => EnumerableSet.UintSet) undelegateTimestampsOfValidator; //  validator => undelegateTimestamp[]
+
+    uint256 public lastUndelegateIndex;
 
     modifier onlyStakeManager() {
         if (stakeManagerAddress != msg.sender) revert NotStakeManager();
@@ -89,11 +92,20 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
         if (needUndelegate == 0) {
             revert UndelegateAmountTooSmall();
         }
+        if (_validators.length == 0) {
+            revert ValidatorsEmpty();
+        }
 
-        for (uint256 i = 0; i < _validators.length; ++i) {
+        uint256 totalCycle = 0;
+        for (
+            uint256 i = (lastUndelegateIndex + 1) % _validators.length;
+            totalCycle < _validators.length;
+            (i = (i + 1) % _validators.length, ++totalCycle)
+        ) {
             if (needUndelegate == 0) {
                 break;
             }
+
             string memory val = _validators[i];
 
             for (uint256 j = 0; j < undelegateTimestampsOfValidator[val].length(); ++j) {
@@ -120,6 +132,8 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
             undelegateTimestampsOfValidator[val].add(block.timestamp);
 
             emit Undelegate(val, willUndelegate * TWELVE_DECIMALS);
+
+            lastUndelegateIndex = i;
         }
 
         if (needUndelegate > 0) {
