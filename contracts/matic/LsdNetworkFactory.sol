@@ -146,7 +146,7 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
         }
 
         (success, data) = contracts._lsdToken.call(
-            abi.encodeWithSelector(ILsdToken.initStakeManager.selector, contracts._stakeManager)
+            abi.encodeWithSelector(ILsdToken.initMinter.selector, contracts._stakeManager)
         );
         if (!success) {
             revert FailedToCall();

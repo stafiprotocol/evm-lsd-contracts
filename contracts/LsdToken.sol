@@ -7,33 +7,39 @@ import "./interfaces/IRateProvider.sol";
 
 contract LsdToken is ERC20Burnable, ILsdToken, IRateProvider {
     // Custom errors to provide more descriptive revert messages.
-    error NotStakeManager();
-    error ZeroMintAmount();
-    error StakeManagerInitialized();
+    error AmountZero();
+    error AlreadyInitialized();
+    error CallerNotAllowed();
 
-    address public stakeManagerAddress;
+    address public minter;
+
+    modifier onlyMinter() {
+        if (msg.sender != minter) {
+            revert CallerNotAllowed();
+        }
+        _;
+    }
 
     // Construct
     constructor(string memory _name, string memory _symbol) ERC20(_name, _symbol) {}
 
     function getRate() public view override returns (uint256) {
-        return IRateProvider(stakeManagerAddress).getRate();
+        return IRateProvider(minter).getRate();
     }
 
-    function initStakeManager(address _stakeManagerAddress) external override {
-        if (stakeManagerAddress != address(0)) {
-            revert StakeManagerInitialized();
+    function initMinter(address _minter) external override {
+        if (minter != address(0)) {
+            revert AlreadyInitialized();
         }
 
-        stakeManagerAddress = _stakeManagerAddress;
+        minter = _minter;
     }
 
     // Mint lsdToken
     // Only accepts calls from the StakeManager contract
-    function mint(address _to, uint256 _amount) public override {
-        if (stakeManagerAddress != msg.sender) revert NotStakeManager();
+    function mint(address _to, uint256 _amount) public override onlyMinter {
         // Check lsdToken amount
-        if (_amount == 0) revert ZeroMintAmount();
+        if (_amount == 0) revert AmountZero();
         // Update balance & supply
         _mint(_to, _amount);
     }
