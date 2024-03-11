@@ -26,4 +26,6 @@ interface ILsdNetworkFactory is Errors {
         uint256 minDelay,
         address[] memory proposers
     ) external;
+
+    function createLsdNetworkWithLsdToken(address _lsdToken, string[] memory _validators) external;
 }

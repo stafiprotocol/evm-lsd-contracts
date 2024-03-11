@@ -23,6 +23,7 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
     mapping(address => NetworkContracts) public networkContractsOfLsdToken;
     mapping(address => uint256) public totalClaimedLsdToken;
     mapping(address => address[]) private lsdTokensOf;
+    mapping(address => bool) public authorizedLsdToken;
     EnumerableSet.AddressSet private entrustedLsdTokens;
 
     modifier onlyFactoryAdmin() {
@@ -104,6 +105,14 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
         return entrustedLsdTokens.remove(_lsdToken);
     }
 
+    function addAuthorizedLsdToken(address _lsdToken) public onlyFactoryAdmin {
+        authorizedLsdToken[_lsdToken] = true;
+    }
+
+    function removeAuthorizedLsdToken(address _lsdToken) public onlyFactoryAdmin {
+        delete authorizedLsdToken[_lsdToken];
+    }
+
     // ------------ user ------------
 
     function createLsdNetwork(
@@ -111,7 +120,7 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
         string memory _lsdTokenSymbol,
         string[] memory _validators
     ) external override {
-        _createLsdNetwork(_lsdTokenName, _lsdTokenSymbol, _validators, msg.sender);
+        _createLsdNetwork(address(0), _lsdTokenName, _lsdTokenSymbol, _validators, msg.sender);
     }
 
     function createLsdNetworkWithTimelock(
@@ -122,18 +131,27 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
         address[] memory proposers
     ) external override {
         address networkAdmin = address(new Timelock(minDelay, proposers, proposers, msg.sender));
-        _createLsdNetwork(_lsdTokenName, _lsdTokenSymbol, _validators, networkAdmin);
+        _createLsdNetwork(address(0), _lsdTokenName, _lsdTokenSymbol, _validators, networkAdmin);
+    }
+
+    function createLsdNetworkWithLsdToken(address _lsdToken, string[] memory _validators) external override {
+        if (!authorizedLsdToken[_lsdToken]) {
+            revert NotAuthorizedLsdToken();
+        }
+        _createLsdNetwork(_lsdToken, "", "", _validators, msg.sender);
     }
 
     // ------------ helper ------------
 
     function _createLsdNetwork(
+        address _lsdToken,
         string memory _lsdTokenName,
         string memory _lsdTokenSymbol,
         string[] memory _validators,
         address _networkAdmin
     ) private {
-        NetworkContracts memory contracts = deployNetworkContracts(_lsdTokenName, _lsdTokenSymbol);
+        NetworkContracts memory contracts = deployNetworkContracts(_lsdToken, _lsdTokenName, _lsdTokenSymbol);
+
         networkContractsOfLsdToken[contracts._lsdToken] = contracts;
         lsdTokensOf[msg.sender].push(contracts._lsdToken);
 
@@ -158,6 +176,13 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
             revert FailedToCall();
         }
 
+        (success, data) = contracts._lsdToken.call(
+            abi.encodeWithSelector(ILsdToken.initStakeManager.selector, contracts._stakeManager)
+        );
+        if (!success) {
+            revert FailedToCall();
+        }
+
         emit LsdNetwork(contracts);
     }
 
@@ -166,14 +191,17 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
     }
 
     function deployNetworkContracts(
+        address _lsdToken,
         string memory _lsdTokenName,
         string memory _lsdTokenSymbol
     ) private returns (NetworkContracts memory) {
         address stakeManager = deploy(stakeManagerLogicAddress);
         address stakePool = deploy(stakePoolLogicAddress);
 
-        address lsdToken = address(new LsdToken(stakeManager, _lsdTokenName, _lsdTokenSymbol));
+        if (_lsdToken == address(0)) {
+            _lsdToken = address(new LsdToken(_lsdTokenName, _lsdTokenSymbol));
+        }
 
-        return NetworkContracts(stakeManager, stakePool, lsdToken, block.number);
+        return NetworkContracts(stakeManager, stakePool, _lsdToken, block.number);
     }
 }

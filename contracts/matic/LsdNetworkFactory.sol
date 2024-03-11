@@ -115,6 +115,7 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
         address _networkAdmin
     ) private {
         NetworkContracts memory contracts = deployNetworkContracts(_lsdTokenName, _lsdTokenSymbol);
+
         networkContractsOfLsdToken[contracts._lsdToken] = contracts;
         lsdTokensOf[msg.sender].push(contracts._lsdToken);
 
@@ -144,6 +145,13 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
             revert FailedToCall();
         }
 
+        (success, data) = contracts._lsdToken.call(
+            abi.encodeWithSelector(ILsdToken.initStakeManager.selector, contracts._stakeManager)
+        );
+        if (!success) {
+            revert FailedToCall();
+        }
+
         emit LsdNetwork(contracts);
     }
 
@@ -158,7 +166,7 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
         address stakeManager = deploy(stakeManagerLogicAddress);
         address stakePool = deploy(stakePoolLogicAddress);
 
-        address lsdToken = address(new LsdToken(stakeManager, _lsdTokenName, _lsdTokenSymbol));
+        address lsdToken = address(new LsdToken(_lsdTokenName, _lsdTokenSymbol));
 
         return NetworkContracts(stakeManager, stakePool, lsdToken, block.number);
     }

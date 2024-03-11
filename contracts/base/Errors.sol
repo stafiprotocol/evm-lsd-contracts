@@ -8,4 +8,5 @@ interface Errors {
 
     error NotFactoryAdmin();
     error FailedToCall();
+    error NotAuthorizedLsdToken();
 }

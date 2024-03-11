@@ -9,16 +9,23 @@ contract LsdToken is ERC20Burnable, ILsdToken, IRateProvider {
     // Custom errors to provide more descriptive revert messages.
     error NotStakeManager();
     error ZeroMintAmount();
+    error StakeManagerInitialized();
 
     address public stakeManagerAddress;
 
     // Construct
-    constructor(address _stakeManagerAddress, string memory _name, string memory _symbol) ERC20(_name, _symbol) {
-        stakeManagerAddress = _stakeManagerAddress;
-    }
+    constructor(string memory _name, string memory _symbol) ERC20(_name, _symbol) {}
 
     function getRate() public view override returns (uint256) {
         return IRateProvider(stakeManagerAddress).getRate();
+    }
+
+    function initStakeManager(address _stakeManagerAddress) external override {
+        if (stakeManagerAddress != address(0)) {
+            revert StakeManagerInitialized();
+        }
+
+        stakeManagerAddress = _stakeManagerAddress;
     }
 
     // Mint lsdToken
