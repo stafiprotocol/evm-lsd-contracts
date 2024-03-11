@@ -77,6 +77,10 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
             if (i == 0) {
                 amount = averageAmount + tail;
             }
+            if (amount == 0) {
+                break;
+            }
+
             if (!IGovStaking(STAKING_PRECOMPILE_ADDRESS).delegate(_validators[i], amount)) {
                 revert FailedToDelegate();
             }
