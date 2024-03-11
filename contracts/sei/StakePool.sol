@@ -37,7 +37,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
 
     address public stakeManagerAddress;
 
-    mapping(string => uint256) delegatedAmountOfValidator; //  validator => amount(decimals 6)
+    mapping(string => uint256) delegatedAmountOfValidator; //  validator => amount(decimals 18)
     mapping(string => EnumerableSet.UintSet) undelegateTimestampsOfValidator; //  validator => undelegateTimestamp[]
 
     uint256 public lastUndelegateIndex;
@@ -85,7 +85,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
                 revert FailedToDelegate();
             }
 
-            delegatedAmountOfValidator[_validators[i]] += amount;
+            delegatedAmountOfValidator[_validators[i]] += amount * TWELVE_DECIMALS;
 
             emit Delegate(_validators[i], amount * TWELVE_DECIMALS);
         }
@@ -123,7 +123,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
                 continue;
             }
 
-            uint256 govDelegated = delegatedAmountOfValidator[val];
+            uint256 govDelegated = delegatedAmountOfValidator[val] / TWELVE_DECIMALS;
 
             uint256 willUndelegate = needUndelegate < govDelegated ? needUndelegate : govDelegated;
 
@@ -132,7 +132,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
             }
             needUndelegate -= willUndelegate;
 
-            delegatedAmountOfValidator[val] -= willUndelegate;
+            delegatedAmountOfValidator[val] -= willUndelegate * TWELVE_DECIMALS;
             undelegateTimestampsOfValidator[val].add(block.timestamp);
 
             emit Undelegate(val, willUndelegate * TWELVE_DECIMALS);
@@ -151,12 +151,15 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
         uint256 _amount
     ) external override onlyStakeManager {
         uint256 willRedelegateAmount = _amount / TWELVE_DECIMALS;
+
         IGovStaking(STAKING_PRECOMPILE_ADDRESS).redelegate(_validatorSrc, _validatorDst, willRedelegateAmount);
 
-        delegatedAmountOfValidator[_validatorSrc] -= willRedelegateAmount;
-        delegatedAmountOfValidator[_validatorDst] += willRedelegateAmount;
+        uint256 changedAmount = willRedelegateAmount * TWELVE_DECIMALS;
 
-        emit Redelegate(_validatorSrc, _validatorDst, willRedelegateAmount * TWELVE_DECIMALS);
+        delegatedAmountOfValidator[_validatorSrc] -= changedAmount;
+        delegatedAmountOfValidator[_validatorDst] += changedAmount;
+
+        emit Redelegate(_validatorSrc, _validatorDst, changedAmount);
     }
 
     function withdrawDelegationRewardsMulti(
@@ -187,13 +190,13 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
     }
 
     function getDelegated(string memory _validator) external view override returns (uint256) {
-        return delegatedAmountOfValidator[_validator] * TWELVE_DECIMALS;
+        return delegatedAmountOfValidator[_validator];
     }
 
     function getTotalDelegated(string[] calldata _validators) external view override returns (uint256) {
         uint256 total;
         for (uint256 i = 0; i < _validators.length; ++i) {
-            total += delegatedAmountOfValidator[_validators[i]] * TWELVE_DECIMALS;
+            total += delegatedAmountOfValidator[_validators[i]];
         }
         return total;
     }
