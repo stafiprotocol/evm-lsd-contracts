@@ -95,7 +95,8 @@ contract StakeManagerTest is Test {
         StakePool poolLogic = new StakePool();
         pool = StakePool(payable(address(new ERC1967Proxy(address(poolLogic), ""))));
 
-        lsdToken = new LsdToken(address(manager), "rBNB", "rBNB");
+        lsdToken = new LsdToken("rBNB", "rBNB");
+        lsdToken.initMinter(address(manager));
         fakeValidator = address(99);
         voters = new address[](3);
         voters[0] = address(1);

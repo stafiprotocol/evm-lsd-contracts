@@ -18,6 +18,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
     error UndelegateAmountTooSmall();
     error FailedToDelegate();
     error FailedToUndelegate();
+    error FailedToRedelegate();
     error FailedToWithdrawRewards();
     error FailedToWithdrawForStaker();
     error NotEnoughAmountToUndelegate();
@@ -63,6 +64,27 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
 
     function _authorizeUpgrade(address _newImplementation) internal override onlyOwner {}
 
+    function _govDelegate(string memory validator, uint256 amount) internal virtual {
+        if (!IGovStaking(STAKING_PRECOMPILE_ADDRESS).delegate(validator, amount)) {
+            revert FailedToDelegate();
+        }
+    }
+    function _govUndelegate(string memory validator, uint256 amount) internal virtual {
+        if (!IGovStaking(STAKING_PRECOMPILE_ADDRESS).undelegate(validator, amount)) {
+            revert FailedToUndelegate();
+        }
+    }
+    function _govRedelegate(string memory srcValidator,string memory dstValidator, uint256 amount) internal virtual {
+        if (!IGovStaking(STAKING_PRECOMPILE_ADDRESS).redelegate(srcValidator, dstValidator, amount)) {
+            revert FailedToRedelegate();
+        }
+    }
+    function _govWithdrawRewards(string memory validator) internal virtual {
+        if (!IGovDistribution(DISTR_PRECOMPILE_ADDRESS).withdrawDelegationRewards(validator)) {
+            revert FailedToWithdrawRewards();
+        }
+    }
+
     function delegateMulti(string[] memory _validators, uint256 _amount) external override onlyStakeManager {
         uint256 willDelegateAmount = _amount / TWELVE_DECIMALS;
         if (willDelegateAmount == 0) {
@@ -80,10 +102,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
             if (amount == 0) {
                 break;
             }
-
-            if (!IGovStaking(STAKING_PRECOMPILE_ADDRESS).delegate(_validators[i], amount)) {
-                revert FailedToDelegate();
-            }
+            _govDelegate(_validators[i], amount);
 
             delegatedAmountOfValidator[_validators[i]] += amount * TWELVE_DECIMALS;
 
@@ -127,9 +146,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
 
             uint256 willUndelegate = needUndelegate < govDelegated ? needUndelegate : govDelegated;
 
-            if (!IGovStaking(STAKING_PRECOMPILE_ADDRESS).undelegate(val, willUndelegate)) {
-                revert FailedToUndelegate();
-            }
+            _govUndelegate(val, willUndelegate);
             needUndelegate -= willUndelegate;
 
             delegatedAmountOfValidator[val] -= willUndelegate * TWELVE_DECIMALS;
@@ -152,7 +169,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
     ) external override onlyStakeManager {
         uint256 willRedelegateAmount = _amount / TWELVE_DECIMALS;
 
-        IGovStaking(STAKING_PRECOMPILE_ADDRESS).redelegate(_validatorSrc, _validatorDst, willRedelegateAmount);
+        _govRedelegate(_validatorSrc, _validatorDst, willRedelegateAmount);
 
         uint256 changedAmount = willRedelegateAmount * TWELVE_DECIMALS;
 
@@ -171,9 +188,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
                 continue;
             }
 
-            if (!IGovDistribution(DISTR_PRECOMPILE_ADDRESS).withdrawDelegationRewards(_validators[i])) {
-                revert FailedToWithdrawRewards();
-            }
+            _govWithdrawRewards(_validators[i]);
         }
         uint256 postBalance = address(this).balance;
 
