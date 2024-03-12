@@ -30,8 +30,8 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
     using EnumerableSet for EnumerableSet.UintSet;
 
     uint256 constant TWELVE_DECIMALS = 1e12;
-    uint256 constant MAX_ENTRIES = 7;
-    uint256 constant UNBONDING_SECONDS = 1814400;
+    uint256 constant MAX_UNDELEGATING_NUM = 7;
+    uint256 constant UNBONDING_SECONDS = 1814400; // 21 days
     address constant STAKING_PRECOMPILE_ADDRESS = 0x0000000000000000000000000000000000001005;
     address constant DISTR_PRECOMPILE_ADDRESS = 0x0000000000000000000000000000000000001007;
 
@@ -119,7 +119,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
                 }
             }
 
-            if (undelegateTimestampsOfValidator[val].length() >= MAX_ENTRIES) {
+            if (undelegateTimestampsOfValidator[val].length() >= MAX_UNDELEGATING_NUM) {
                 continue;
             }
 

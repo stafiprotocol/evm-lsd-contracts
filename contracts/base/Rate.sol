@@ -13,7 +13,7 @@ abstract contract Rate is Ownable, IRateProvider {
     uint256 public constant MIN_RATE_CHANGE_LIMIT = 1e13;
     uint256 public constant MAX_RATE_CHANGE_LIMIT = 5 * 1e15;
 
-    uint256 public rate;
+    uint256 public rate; // (1e18*token)/rToken
     uint256 public rateChangeLimit;
     mapping(uint256 => uint256) public eraRate;
 

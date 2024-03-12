@@ -132,6 +132,8 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     }
 
     function stakeWithPool(address _poolAddress) public payable {
+        // Sei is an Cosmos SDK based chain, it only takes 6 decimals account in staking method,
+        // here we do the same for coherence and accuracy.
         uint256 stakeAmount = (msg.value / TWELVE_DECIMALS) * TWELVE_DECIMALS;
 
         if (stakeAmount < minStakeAmount) revert NotEnoughStakeAmount();
