@@ -118,9 +118,10 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
     function createLsdNetwork(
         string memory _lsdTokenName,
         string memory _lsdTokenSymbol,
-        string[] memory _validators
+        string[] memory _validators,
+        address _networkAdmin
     ) external override {
-        _createLsdNetwork(address(0), _lsdTokenName, _lsdTokenSymbol, _validators, msg.sender);
+        _createLsdNetwork(address(0), _lsdTokenName, _lsdTokenSymbol, _validators, _networkAdmin);
     }
 
     function createLsdNetworkWithTimelock(
@@ -134,11 +135,15 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
         _createLsdNetwork(address(0), _lsdTokenName, _lsdTokenSymbol, _validators, networkAdmin);
     }
 
-    function createLsdNetworkWithLsdToken(address _lsdToken, string[] memory _validators) external override {
+    function createLsdNetworkWithLsdToken(
+        address _lsdToken,
+        string[] memory _validators,
+        address _networkAdmin
+    ) external override {
         if (!authorizedLsdToken[_lsdToken]) {
             revert NotAuthorizedLsdToken();
         }
-        _createLsdNetwork(_lsdToken, "", "", _validators, msg.sender);
+        _createLsdNetwork(_lsdToken, "", "", _validators, _networkAdmin);
     }
 
     // ------------ helper ------------

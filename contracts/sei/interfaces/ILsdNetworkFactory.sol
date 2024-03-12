@@ -16,7 +16,8 @@ interface ILsdNetworkFactory is Errors {
     function createLsdNetwork(
         string memory _lsdTokenName,
         string memory _lsdTokenSymbol,
-        string[] memory _validators
+        string[] memory _validators,
+        address _networkAdmin
     ) external;
 
     function createLsdNetworkWithTimelock(
@@ -27,5 +28,9 @@ interface ILsdNetworkFactory is Errors {
         address[] memory proposers
     ) external;
 
-    function createLsdNetworkWithLsdToken(address _lsdToken, string[] memory _validators) external;
+    function createLsdNetworkWithLsdToken(
+        address _lsdToken,
+        string[] memory _validators,
+        address _networkAdmin
+    ) external;
 }
