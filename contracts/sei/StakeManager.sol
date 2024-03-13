@@ -26,6 +26,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     error EraNotMatch();
     error WithdrawRewardsFailed();
     error BalanceNotMatch();
+    error CommissionRateInvalid();
 
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.UintSet;
@@ -95,6 +96,13 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         }
 
         if (!bondedPools.remove(_poolAddress)) revert PoolNotExist(_poolAddress);
+    }
+
+    function setFactoryCommissionRate(uint256 _factoryCommissionRate) external onlyOwner {
+        if (_factoryCommissionRate > 1e18) {
+            revert CommissionRateInvalid();
+        }
+        factoryCommissionRate = _factoryCommissionRate;
     }
 
     // ------ delegation balancer
