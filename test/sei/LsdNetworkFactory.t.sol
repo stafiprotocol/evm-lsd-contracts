@@ -12,6 +12,11 @@ import {LsdNetworkFactory} from "../../contracts/sei/LsdNetworkFactory.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract MockSeiGov is IGovDistribution, IGovStaking {
+    receive() external payable{}
+
+    function setWithdrawAddress(address withdrawAddr) external returns (bool success) {
+        return true;
+    }
     function withdrawDelegationRewards(string memory validator) external returns (bool success) {
         return true;
     }
@@ -90,11 +95,12 @@ contract FactoryTest is Test {
 
     function test_create() public {
         assertEq(factory.factoryAdmin(), admin);
+        address networkAdmin = address(100);
 
         string[] memory vals = new string[](1);
         vals[0] = fakeValidator;
 
-        factory.createLsdNetwork("name", "symbol", vals);
+        factory.createLsdNetwork("name", "symbol", vals, networkAdmin);
 
         address lsdToken = factory.lsdTokensOfCreater(address(this))[0];
         (address stakeManagerAddr, address stakePoolAddr, address c, uint256 d) = factory.networkContractsOfLsdToken(
