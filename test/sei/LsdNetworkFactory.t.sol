@@ -14,9 +14,6 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 contract MockSeiGov is IGovDistribution, IGovStaking {
     receive() external payable{}
 
-    function setWithdrawAddress(address withdrawAddr) external returns (bool success) {
-        return true;
-    }
     function withdrawDelegationRewards(string memory validator) external returns (bool success) {
         return true;
     }
@@ -35,10 +32,6 @@ contract MockSeiGov is IGovDistribution, IGovStaking {
 
     function undelegate(string memory valAddress, uint256 amount) external returns (bool success) {
         return true;
-    }
-
-    function getDelegation(address delegator, string memory valAddress) external view returns (uint256 shares) {
-        return 0;
     }
 }
 

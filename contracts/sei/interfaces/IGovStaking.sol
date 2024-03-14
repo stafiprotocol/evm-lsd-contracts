@@ -11,6 +11,4 @@ interface IGovStaking {
     ) external returns (bool success);
 
     function undelegate(string memory valAddress, uint256 amount) external returns (bool success);
-
-    function getDelegation(address delegator, string memory valAddress) external view returns (uint256 shares);
 }
