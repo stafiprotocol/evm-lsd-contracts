@@ -65,20 +65,23 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
     function _authorizeUpgrade(address _newImplementation) internal override onlyOwner {}
 
     function _govDelegate(string memory validator, uint256 amount) internal virtual {
-        if (!IGovStaking(STAKING_PRECOMPILE_ADDRESS).delegate(validator, amount)) {
+        if (!IGovStaking(STAKING_PRECOMPILE_ADDRESS).delegate{value: amount}(validator)) {
             revert FailedToDelegate();
         }
     }
+
     function _govUndelegate(string memory validator, uint256 amount) internal virtual {
         if (!IGovStaking(STAKING_PRECOMPILE_ADDRESS).undelegate(validator, amount)) {
             revert FailedToUndelegate();
         }
     }
-    function _govRedelegate(string memory srcValidator,string memory dstValidator, uint256 amount) internal virtual {
+
+    function _govRedelegate(string memory srcValidator, string memory dstValidator, uint256 amount) internal virtual {
         if (!IGovStaking(STAKING_PRECOMPILE_ADDRESS).redelegate(srcValidator, dstValidator, amount)) {
             revert FailedToRedelegate();
         }
     }
+
     function _govWithdrawRewards(string memory validator) internal virtual {
         if (!IGovDistribution(DISTR_PRECOMPILE_ADDRESS).withdrawDelegationRewards(validator)) {
             revert FailedToWithdrawRewards();
@@ -91,8 +94,8 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
             revert DelegateAmountTooSmall();
         }
 
-        uint256 averageAmount = willDelegateAmount / _validators.length;
-        uint256 tail = willDelegateAmount % _validators.length;
+        uint256 averageAmount = (willDelegateAmount / _validators.length) * TWELVE_DECIMALS;
+        uint256 tail = (willDelegateAmount % _validators.length) * TWELVE_DECIMALS;
 
         for (uint256 i = 0; i < _validators.length; ++i) {
             uint256 amount = averageAmount;
@@ -104,9 +107,9 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
             }
             _govDelegate(_validators[i], amount);
 
-            delegatedAmountOfValidator[_validators[i]] += amount * TWELVE_DECIMALS;
+            delegatedAmountOfValidator[_validators[i]] += amount;
 
-            emit Delegate(_validators[i], amount * TWELVE_DECIMALS);
+            emit Delegate(_validators[i], amount);
         }
     }
 

@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 interface IGovStaking {
-    function delegate(string memory valAddress, uint256 amount) external returns (bool success);
+    function delegate(string memory valAddress) external payable returns (bool success);
 
     function redelegate(
         string memory srcAddress,
