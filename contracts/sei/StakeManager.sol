@@ -68,6 +68,8 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         address _owner,
         address _factoryAddress
     ) external virtual initializer {
+        _transferOwnership(_owner);
+
         _initManagerParams(_lsdToken, _poolAddress, 22, 5 * 1e14);
 
         minStakeAmount = TWELVE_DECIMALS;
@@ -78,8 +80,6 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         for (uint256 i = 0; i < _validators.length; ++i) {
             validatorsOf[_poolAddress].add(_validators[i]);
         }
-
-        _transferOwnership(_owner);
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
