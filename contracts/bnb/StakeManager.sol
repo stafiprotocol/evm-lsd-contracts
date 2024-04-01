@@ -85,7 +85,7 @@ contract StakeManager is Initializable, UUPSUpgradeable, Multisig, Manager {
 
         _transferOwnership(_owner);
         initMultisig(_initialVoters, _initialThreshold);
-        _initManagerParams(_lsdToken, _poolAddress, 16, 3 * 1e14);
+        _initManagerParams(_lsdToken, _poolAddress, 16, 0);
 
         validatorsOf[_poolAddress].add(_validator);
 
