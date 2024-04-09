@@ -1,24 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import "../../interfaces/IStakePool.sol";
+interface IBnbStakePool {
+    function redelegate(address _validatorSrc, address _validatorDst, uint256 _amount) external;
 
-interface IBnbStakePool is IStakePool {
-    function checkAndClaimReward() external returns (uint256);
+    function withdrawForStaker(address _staker, uint256 _amount) external;
 
-    function checkAndClaimUndelegated() external returns (uint256);
+    function delegateMulti(address[] calldata _validators, uint256 _amount) external;
 
-    function withdrawForStaker(address staker, uint256 amount) external;
+    function undelegateMulti(address[] calldata _validators, uint256 _amount) external;
 
-    function getTotalDelegated() external view returns (uint256);
+    function getDelegated(address _validator) external view returns (uint256);
 
-    function getMinDelegation() external view returns (uint256);
-
-    function getPendingUndelegateTime(address validator) external view returns (uint256);
-
-    function getPendingRedelegateTime(address valSrc, address valDst) external view returns (uint256);
-
-    function getRequestInFly() external view returns (uint256[3] memory);
-
-    function getRelayerFee() external view returns (uint256);
+    function getTotalDelegated(address[] calldata _validator) external view returns (uint256);
 }
