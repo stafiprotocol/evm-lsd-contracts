@@ -12,4 +12,6 @@ interface IStakeHub {
     function claim(address operatorAddress, uint256 requestNumber) external;
 
     function getValidatorCreditContract(address operatorAddress) external view returns (address creditContract);
+
+    function minDelegationBNBChange() external view returns (uint256);
 }

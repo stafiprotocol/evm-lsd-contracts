@@ -93,6 +93,9 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
         if (willDelegateAmount == 0) {
             revert DelegateAmountTooSmall();
         }
+        if (_validators.length == 0) {
+            revert ValidatorsEmpty();
+        }
 
         uint256 averageAmount = (willDelegateAmount / _validators.length) * TWELVE_DECIMALS;
         uint256 tail = (willDelegateAmount % _validators.length) * TWELVE_DECIMALS;

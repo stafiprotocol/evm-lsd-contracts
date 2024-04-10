@@ -42,7 +42,7 @@ abstract contract Rate is Ownable, IRateProvider {
             uint256 rateChange = _rate > rate ? _rate - rate : rate - _rate;
             if ((rateChange * 1e18) / rate > rateChangeLimit) revert RateChangeExceedLimit(rate, _rate);
         }
-        
+
         rate = _rate;
         eraRate[_era] = rate;
     }

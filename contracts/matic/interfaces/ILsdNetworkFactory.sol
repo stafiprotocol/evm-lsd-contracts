@@ -4,7 +4,6 @@ pragma solidity 0.8.19;
 import "../../base/Errors.sol";
 
 interface ILsdNetworkFactory is Errors {
-
     struct NetworkContracts {
         address _stakeManager;
         address _stakePool;
@@ -21,7 +20,7 @@ interface ILsdNetworkFactory is Errors {
     ) external;
 
     function createLsdNetworkWithTimelock(
-         string memory _lsdTokenName,
+        string memory _lsdTokenName,
         string memory _lsdTokenSymbol,
         uint256 _validatorId,
         uint256 minDelay,
