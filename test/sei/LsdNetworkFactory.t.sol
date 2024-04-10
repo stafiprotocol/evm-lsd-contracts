@@ -12,13 +12,13 @@ import {LsdNetworkFactory} from "../../contracts/sei/LsdNetworkFactory.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract MockSeiGov is IGovDistribution, IGovStaking {
-    receive() external payable{}
+    receive() external payable {}
 
     function withdrawDelegationRewards(string memory validator) external returns (bool success) {
         return true;
     }
 
-    function delegate(string memory valAddress, uint256 amount) external returns (bool success) {
+    function delegate(string memory valAddress) external payable returns (bool success) {
         return true;
     }
 
@@ -45,15 +45,18 @@ contract MockStakePool is StakePool {
     }
 
     function _govDelegate(string memory validator, uint256 amount) internal override {
-        govStaking.delegate(validator, amount);
-        address(govStaking).call{value: amount*1e12}("");
+        govStaking.delegate{value: amount}(validator);
+        address(govStaking).call{value: amount * 1e12}("");
     }
+
     function _govUndelegate(string memory validator, uint256 amount) internal override {
         govStaking.undelegate(validator, amount);
     }
-    function _govRedelegate(string memory srcValidator,string memory dstValidator, uint256 amount) internal override {
+
+    function _govRedelegate(string memory srcValidator, string memory dstValidator, uint256 amount) internal override {
         govStaking.redelegate(srcValidator, dstValidator, amount);
     }
+
     function _govWithdrawRewards(string memory validator) internal override {
         govDistribution.withdrawDelegationRewards(validator);
     }
@@ -117,8 +120,8 @@ contract FactoryTest is Test {
         assertEq(address(stakePool).balance, 2e12);
         assertEq(stakeManager.latestEra(), 0);
         assertEq(stakeManager.currentEra(), 0);
-        
-        vm.warp(1710201600+86400); // time flies
+
+        vm.warp(1710201600 + 86400); // time flies
         assertEq(stakeManager.currentEra(), 1);
         stakeManager.newEra();
 

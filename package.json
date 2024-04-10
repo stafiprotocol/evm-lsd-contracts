@@ -3,7 +3,7 @@
     "compile": "hardhat compile",
     "size": "hardhat size-contracts",
     "test": "hardhat test",
-    "prettier": "prettier --write --plugin=prettier-plugin-solidity 'contracts/**/*.sol'",
+    "prettier": "prettier --write --plugin=prettier-plugin-solidity 'contracts/**/*.sol' 'test/**/*.sol'",
     "clean": "rm -rf ./node_modules ./artifacts ./cache"
   },
   "license": "GPL-3.0-only",
