@@ -13,4 +13,6 @@ interface IBnbStakePool {
     function getDelegated(address _validator) external view returns (uint256);
 
     function getTotalDelegated(address[] calldata _validator) external view returns (uint256);
+
+    function claimUndelegated(address[] memory _validators) external;
 }

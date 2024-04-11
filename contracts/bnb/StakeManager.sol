@@ -232,33 +232,30 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         address[] memory poolList = getBondedPools();
         for (uint256 i = 0; i < poolList.length; ++i) {
             address poolAddress = poolList[i];
-
+            IBnbStakePool stakePool = IBnbStakePool(poolAddress);
             address[] memory validators = getValidatorsOf(poolAddress);
 
-            // withdraw reward
-            uint256 poolNewReward = 0;
-            // uint256 poolNewReward = IBnbStakePool(poolAddress).withdrawDelegationRewardsMulti(validators);
-            // emit NewReward(poolAddress, poolNewReward);
-            // totalNewReward = totalNewReward + poolNewReward;
+            // claim undelegated
+            stakePool.claimUndelegated(validators);
 
             // bond or unbond
             PoolInfo memory poolInfo = poolInfoOf[poolAddress];
-            uint256 poolBondAndNewReward = poolInfo.bond + poolNewReward;
-            if (poolBondAndNewReward > poolInfo.unbond) {
-                uint256 needDelegate = poolBondAndNewReward - poolInfo.unbond;
-                IBnbStakePool(poolAddress).delegateMulti(validators, needDelegate);
+            if (poolInfo.bond > poolInfo.unbond) {
+                uint256 needDelegate = poolInfo.bond - poolInfo.unbond;
+                stakePool.delegateMulti(validators, needDelegate);
 
                 emit Delegate(poolAddress, validators, needDelegate);
-            } else if (poolBondAndNewReward < poolInfo.unbond) {
-                uint256 needUndelegate = poolInfo.unbond - poolBondAndNewReward;
-                IBnbStakePool(poolAddress).undelegateMulti(validators, needUndelegate);
+            } else if (poolInfo.bond < poolInfo.unbond) {
+                uint256 needUndelegate = poolInfo.unbond - poolInfo.bond;
+                stakePool.undelegateMulti(validators, needUndelegate);
 
                 emit Undelegate(poolAddress, validators, needUndelegate);
             }
 
             // cal total active
-            uint256 newPoolActive = IBnbStakePool(poolAddress).getTotalDelegated(validators);
-            newTotalActive = newTotalActive + newPoolActive;
+            uint256 newPoolActive = stakePool.getTotalDelegated(validators);
+            newTotalActive += newPoolActive;
+            totalNewReward += newPoolActive > poolInfo.active ? newPoolActive - poolInfo.active : 0;
 
             // update pool state
             poolInfo.era = latestEra;
