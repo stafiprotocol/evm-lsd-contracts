@@ -65,7 +65,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     ) external virtual initializer {
         _transferOwnership(_owner);
 
-        _initManagerParams(_lsdToken, _poolAddress, 22, 0);
+        _initManagerParams(_lsdToken, _poolAddress, 8, 0);
 
         minStakeAmount = 1e17;
 

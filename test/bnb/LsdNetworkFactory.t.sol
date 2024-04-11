@@ -16,6 +16,8 @@ contract FactoryTest is Test {
 
     address fakeValidator = 0xAf581B49EA5B09d69D86A8eD801EF0cEdA33Ae34;
 
+    receive() external payable {}
+
     function setUp() public {
         vm.warp(39363333);
         StakeManager stakeManagerLogic = new StakeManager();
@@ -47,10 +49,9 @@ contract FactoryTest is Test {
 
         factory.createLsdNetwork("name", "symbol", vals, networkAdmin);
 
-        address lsdToken = factory.lsdTokensOfCreater(address(this))[0];
-        (address stakeManagerAddr, address stakePoolAddr, address c, uint256 d) = factory.networkContractsOfLsdToken(
-            lsdToken
-        );
+        address lsdTokenAddr = factory.lsdTokensOfCreater(address(this))[0];
+        LsdToken lsdToken = LsdToken(lsdTokenAddr);
+        (address stakeManagerAddr, address stakePoolAddr, , ) = factory.networkContractsOfLsdToken(lsdTokenAddr);
 
         console.log("stakeManger %s", stakeManagerAddr);
         console.log("stakePool %s", stakePoolAddr);
@@ -78,6 +79,8 @@ contract FactoryTest is Test {
 
         stakeManager.stake{value: 2 ether}();
 
+        assertEq(lsdToken.balanceOf(address(this)), 2 ether);
+
         assertEq(address(stakePool).balance, 2 ether);
         assertEq(stakeManager.latestEra(), 1);
         assertEq(stakeManager.currentEra(), 1);
@@ -93,5 +96,26 @@ contract FactoryTest is Test {
         assertEq(stakeManager.latestEra(), 2);
         assertEq(stakeManager.currentEra(), 2);
         assertEq(stakeManager.rate(), 1e18);
+
+        lsdToken.approve(stakeManagerAddr, 2 ether);
+        stakeManager.unstake(1 ether);
+
+        assertEq(lsdToken.balanceOf(address(this)), 1 ether);
+
+        for (uint256 i = 3; i <= 10; ++i) {
+            vm.warp(39363333 + 86400 * i); // time flies
+            assertEq(stakeManager.currentEra(), i);
+
+            stakeManager.newEra();
+        }
+
+        // era 10
+        assertEq(stakeManager.latestEra(), 10);
+        assertEq(stakeManager.currentEra(), 10);
+        assertEq(stakeManager.rate(), 1e18);
+
+        console.log("stake pool balance: %d", address(stakePool).balance);
+
+        stakeManager.withdraw();
     }
 }

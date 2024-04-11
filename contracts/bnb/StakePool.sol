@@ -62,6 +62,9 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
     function _govUndelegate(address _validator, uint256 _amount) internal virtual {
         IStakeCredit stakeCredit = IStakeCredit(stakeHub.getValidatorCreditContract(_validator));
         uint256 share = stakeCredit.getSharesByPooledBNB(_amount);
+        if (stakeCredit.getPooledBNBByShares(share) < _amount && share < stakeCredit.balanceOf(address(this))) {
+            share += 1;
+        }
 
         stakeHub.undelegate(_validator, share);
 
