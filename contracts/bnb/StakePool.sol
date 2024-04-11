@@ -71,10 +71,10 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
     function _govClaimUndelegated(address _validator) internal virtual {
         IStakeCredit stakeCredit = IStakeCredit(stakeHub.getValidatorCreditContract(_validator));
         uint256 number = stakeCredit.claimableUnbondRequest(address(this));
-
-        stakeHub.claim(_validator, number);
-
-        emit ClaimUndelegated(_validator, number);
+        if (number > 0) {
+            stakeHub.claim(_validator, number);
+            emit ClaimUndelegated(_validator, number);
+        }
     }
 
     function _govRedelegate(address _srcValidator, address _dstValidator, uint256 _amount) internal virtual {

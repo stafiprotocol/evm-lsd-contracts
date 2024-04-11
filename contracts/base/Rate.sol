@@ -10,6 +10,7 @@ abstract contract Rate is Ownable, IRateProvider {
     error RateChangeExceedLimit(uint256 oldRate, uint256 newRate);
 
     uint256 public constant MAX_RATE_CHANGE_LIMIT = 5 * 1e15;
+    uint256 constant EIGHTEEN_DECIMALS = 1e18;
 
     uint256 public rate; // (1e18*token)/rToken
     uint256 public rateChangeLimit;
@@ -27,7 +28,7 @@ abstract contract Rate is Ownable, IRateProvider {
         if (rate != 0) revert AlreadyInitialized();
 
         _setRateChangeLimit(_rateChangeLimit);
-        rate = 1e18;
+        rate = EIGHTEEN_DECIMALS;
         eraRate[0] = rate;
     }
 
@@ -40,10 +41,21 @@ abstract contract Rate is Ownable, IRateProvider {
     function _setEraRate(uint256 _era, uint256 _rate) internal virtual {
         if (rateChangeLimit > 0) {
             uint256 rateChange = _rate > rate ? _rate - rate : rate - _rate;
-            if ((rateChange * 1e18) / rate > rateChangeLimit) revert RateChangeExceedLimit(rate, _rate);
+            if ((rateChange * EIGHTEEN_DECIMALS) / rate > rateChangeLimit) revert RateChangeExceedLimit(rate, _rate);
         }
 
         rate = _rate;
         eraRate[_era] = rate;
+    }
+
+    function _calRate(uint256 _totalActive, uint256 _totalLst) internal view virtual returns (uint256) {
+        if (_totalLst == 0) {
+            return EIGHTEEN_DECIMALS;
+        }
+        uint256 calRate = (_totalActive * EIGHTEEN_DECIMALS) / _totalLst;
+        if (calRate < EIGHTEEN_DECIMALS && EIGHTEEN_DECIMALS - calRate < 10) {
+            calRate = EIGHTEEN_DECIMALS;
+        }
+        return calRate;
     }
 }

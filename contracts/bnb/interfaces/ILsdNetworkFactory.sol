@@ -16,21 +16,21 @@ interface ILsdNetworkFactory is Errors {
     function createLsdNetwork(
         string memory _lsdTokenName,
         string memory _lsdTokenSymbol,
-        string[] memory _validators,
+        address[] memory _validators,
         address _networkAdmin
     ) external;
 
     function createLsdNetworkWithTimelock(
         string memory _lsdTokenName,
         string memory _lsdTokenSymbol,
-        string[] memory _validators,
+        address[] memory _validators,
         uint256 minDelay,
         address[] memory proposers
     ) external;
 
     function createLsdNetworkWithLsdToken(
         address _lsdToken,
-        string[] memory _validators,
+        address[] memory _validators,
         address _networkAdmin
     ) external;
 }

@@ -30,8 +30,6 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.UintSet;
 
-    uint256 constant EIGHTEEN_DECIMALS = 1e18;
-
     address public factoryAddress;
     uint256 public factoryCommissionRate;
 
@@ -284,7 +282,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         }
 
         // update rate
-        uint256 newRate = (newTotalActive * EIGHTEEN_DECIMALS) / (ERC20Burnable(lsdToken).totalSupply());
+        uint256 newRate = _calRate(newTotalActive, ERC20(lsdToken).totalSupply());
         _setEraRate(_era, newRate);
 
         emit ExecuteNewEra(_era, newRate);

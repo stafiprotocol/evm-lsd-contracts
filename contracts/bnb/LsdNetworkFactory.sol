@@ -118,7 +118,7 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
     function createLsdNetwork(
         string memory _lsdTokenName,
         string memory _lsdTokenSymbol,
-        string[] memory _validators,
+        address[] memory _validators,
         address _networkAdmin
     ) external override {
         _createLsdNetwork(address(0), _lsdTokenName, _lsdTokenSymbol, _validators, _networkAdmin);
@@ -127,7 +127,7 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
     function createLsdNetworkWithTimelock(
         string memory _lsdTokenName,
         string memory _lsdTokenSymbol,
-        string[] memory _validators,
+        address[] memory _validators,
         uint256 minDelay,
         address[] memory proposers
     ) external override {
@@ -137,7 +137,7 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
 
     function createLsdNetworkWithLsdToken(
         address _lsdToken,
-        string[] memory _validators,
+        address[] memory _validators,
         address _networkAdmin
     ) external override {
         if (!authorizedLsdToken[_lsdToken]) {
@@ -152,7 +152,7 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
         address _lsdToken,
         string memory _lsdTokenName,
         string memory _lsdTokenSymbol,
-        string[] memory _validators,
+        address[] memory _validators,
         address _networkAdmin
     ) private {
         NetworkContracts memory contracts = deployNetworkContracts(_lsdToken, _lsdTokenName, _lsdTokenSymbol);

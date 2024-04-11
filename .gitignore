@@ -23,3 +23,4 @@ dbg.project.json
 /.deploys
 
 /secrets.json
+out
