@@ -53,7 +53,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
         _disableInitializers();
     }
 
-    function initialize(address _stakeManagerAddress, address _owner) external virtual initializer {
+    function initialize(address _stakeManagerAddress, address _owner) external initializer {
         if (_stakeManagerAddress == address(0)) revert NotValidAddress();
 
         _transferOwnership(_owner);
@@ -61,6 +61,8 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
     }
 
     receive() external payable {}
+
+    function _authorizeUpgrade(address _newImplementation) internal override onlyOwner {}
 
     // ------------ getter ------------
 
@@ -79,10 +81,6 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
         }
         return total;
     }
-
-    // ------------ settings ------------
-
-    function _authorizeUpgrade(address _newImplementation) internal override onlyOwner {}
 
     // ------------ stakeManager ------------
 
@@ -202,6 +200,9 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
     }
 
     function withdrawForStaker(address _staker, uint256 _amount) external override onlyStakeManager {
+        if (_staker == address(0)) {
+            revert NotValidAddress();
+        }
         if (_amount > 0) {
             (bool result, ) = _staker.call{value: _amount}("");
             if (!result) revert FailedToWithdrawForStaker();

@@ -62,7 +62,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         address[] calldata _validators,
         address _owner,
         address _factoryAddress
-    ) external virtual initializer {
+    ) external initializer {
         _transferOwnership(_owner);
 
         _initManagerParams(_lsdToken, _poolAddress, 8, 0);

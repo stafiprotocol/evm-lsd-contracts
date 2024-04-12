@@ -66,7 +66,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         string[] memory _validators,
         address _owner,
         address _factoryAddress
-    ) external virtual initializer {
+    ) external initializer {
         _transferOwnership(_owner);
 
         _initManagerParams(_lsdToken, _poolAddress, 22, 0);
@@ -81,6 +81,8 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         }
     }
 
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+
     // ------------ getter ------------
 
     function version() external view returns (uint8) {
@@ -92,8 +94,6 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     }
 
     // ------------ settings ------------
-
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function rmStakePool(address _poolAddress) external onlyOwner {
         PoolInfo memory poolInfo = poolInfoOf[_poolAddress];
