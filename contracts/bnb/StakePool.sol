@@ -220,7 +220,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
     }
 
     function getTotalDelegated(address[] calldata _validators) external view override returns (uint256) {
-        uint256 totalBnbAmount;
+        uint256 totalBnbAmount = pendingDelegate;
         for (uint256 i = 0; i < _validators.length; ++i) {
             IStakeCredit stakeCredit = IStakeCredit(stakeHub.getValidatorCreditContract(_validators[i]));
             totalBnbAmount += stakeCredit.getPooledBNB(address(this));
