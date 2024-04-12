@@ -81,6 +81,18 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         }
     }
 
+    // ------------ getter ------------
+
+    function version() external view returns (uint8) {
+        return _getInitializedVersion();
+    }
+
+    function getValidatorsOf(address _poolAddress) public view returns (string[] memory validators) {
+        return validatorsOf[_poolAddress].values();
+    }
+
+    // ------------ settings ------------
+
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function rmStakePool(address _poolAddress) external onlyOwner {
@@ -295,17 +307,5 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         _setEraRate(_era, newRate);
 
         emit ExecuteNewEra(_era, newRate);
-    }
-
-    function version() external view returns (uint8) {
-        return _getInitializedVersion();
-    }
-
-    function getValidatorsOf(address _poolAddress) public view returns (string[] memory validators) {
-        validators = new string[](validatorsOf[_poolAddress].length());
-        for (uint256 i = 0; i < validatorsOf[_poolAddress].length(); ++i) {
-            validators[i] = validatorsOf[_poolAddress].at(i);
-        }
-        return validators;
     }
 }

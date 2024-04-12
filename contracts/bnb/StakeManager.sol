@@ -67,7 +67,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
 
         _initManagerParams(_lsdToken, _poolAddress, 8, 0);
 
-        minStakeAmount = 1e17;
+        minStakeAmount = 1e12;
 
         factoryAddress = _factoryAddress;
         factoryCommissionRate = 1e17; // 10%
@@ -78,6 +78,18 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+
+    // ------------ getter ------------
+
+    function version() external view returns (uint8) {
+        return _getInitializedVersion();
+    }
+
+    function getValidatorsOf(address _poolAddress) public view returns (address[] memory validators) {
+        return validatorsOf[_poolAddress].values();
+    }
+
+    // ------------ settings ------------
 
     function rmStakePool(address _poolAddress) external onlyOwner {
         PoolInfo memory poolInfo = poolInfoOf[_poolAddress];
@@ -286,17 +298,5 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         _setEraRate(_era, newRate);
 
         emit ExecuteNewEra(_era, newRate);
-    }
-
-    function version() external view returns (uint8) {
-        return _getInitializedVersion();
-    }
-
-    function getValidatorsOf(address _poolAddress) public view returns (address[] memory validators) {
-        validators = new address[](validatorsOf[_poolAddress].length());
-        for (uint256 i = 0; i < validatorsOf[_poolAddress].length(); ++i) {
-            validators[i] = validatorsOf[_poolAddress].at(i);
-        }
-        return validators;
     }
 }

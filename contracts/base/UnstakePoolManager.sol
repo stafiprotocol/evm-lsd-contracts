@@ -31,11 +31,7 @@ abstract contract UnstakePoolManager is Ownable {
     event SetUnbondingDuration(uint256 unbondingDuration);
 
     function getUnstakeIndexListOf(address _staker) public view virtual returns (uint256[] memory unstakeIndexList) {
-        unstakeIndexList = new uint256[](unstakesOfUser[_staker].length());
-        for (uint256 i = 0; i < unstakesOfUser[_staker].length(); ++i) {
-            unstakeIndexList[i] = unstakesOfUser[_staker].at(i);
-        }
-        return unstakeIndexList;
+        return unstakesOfUser[_staker].values();
     }
 
     function setUnbondingDuration(uint256 _unbondingDuration) external virtual onlyOwner {

@@ -23,11 +23,7 @@ abstract contract StakePoolManager is Ownable {
     mapping(address => PoolInfo) public poolInfoOf;
 
     function getBondedPools() public view virtual returns (address[] memory pools) {
-        pools = new address[](bondedPools.length());
-        for (uint256 i = 0; i < bondedPools.length(); ++i) {
-            pools[i] = bondedPools.at(i);
-        }
-        return pools;
+        return bondedPools.values();
     }
 
     function addStakePool(address _poolAddress) external virtual onlyOwner {

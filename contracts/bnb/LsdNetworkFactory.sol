@@ -57,12 +57,11 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
     // ------------ getter ------------
 
     function lsdTokensOfCreater(address _creater) public view returns (address[] memory) {
-        uint256 length = lsdTokensOf[_creater].length;
-        address[] memory list = new address[](length);
-        for (uint256 i = 0; i < length; i++) {
-            list[i] = lsdTokensOf[_creater][i];
-        }
-        return list;
+        return lsdTokensOf[_creater];
+    }
+
+    function getEntrustedLsdTokens() public view returns (address[] memory) {
+        return entrustedLsdTokens.values();
     }
 
     // ------------ settings ------------
@@ -86,15 +85,6 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
     function factoryClaim(address _lsdToken, address _recipient, uint256 _amount) external onlyFactoryAdmin {
         IERC20(_lsdToken).safeTransfer(_recipient, _amount);
         totalClaimedLsdToken[_lsdToken] += _amount;
-    }
-
-    function getEntrustedLsdTokens() public view returns (address[] memory) {
-        uint256 length = entrustedLsdTokens.length();
-        address[] memory list = new address[](length);
-        for (uint256 i = 0; i < length; i++) {
-            list[i] = entrustedLsdTokens.at(i);
-        }
-        return list;
     }
 
     function addEntrustedLsdToken(address _lsdToken) external onlyFactoryAdmin returns (bool) {

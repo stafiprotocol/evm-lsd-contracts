@@ -62,31 +62,29 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
 
     receive() external payable {}
 
+    // ------------ getter ------------
+
+    function version() external view returns (uint8) {
+        return _getInitializedVersion();
+    }
+
+    function getDelegated(string memory _validator) external view override returns (uint256) {
+        return delegatedAmountOfValidator[_validator];
+    }
+
+    function getTotalDelegated(string[] calldata _validators) external view override returns (uint256) {
+        uint256 total;
+        for (uint256 i = 0; i < _validators.length; ++i) {
+            total += delegatedAmountOfValidator[_validators[i]];
+        }
+        return total;
+    }
+
+    // ------------ settings ------------
+
     function _authorizeUpgrade(address _newImplementation) internal override onlyOwner {}
 
-    function _govDelegate(string memory validator, uint256 amount) internal virtual {
-        if (!IGovStaking(STAKING_PRECOMPILE_ADDRESS).delegate{value: amount}(validator)) {
-            revert FailedToDelegate();
-        }
-    }
-
-    function _govUndelegate(string memory validator, uint256 amount) internal virtual {
-        if (!IGovStaking(STAKING_PRECOMPILE_ADDRESS).undelegate(validator, amount)) {
-            revert FailedToUndelegate();
-        }
-    }
-
-    function _govRedelegate(string memory srcValidator, string memory dstValidator, uint256 amount) internal virtual {
-        if (!IGovStaking(STAKING_PRECOMPILE_ADDRESS).redelegate(srcValidator, dstValidator, amount)) {
-            revert FailedToRedelegate();
-        }
-    }
-
-    function _govWithdrawRewards(string memory validator) internal virtual {
-        if (!IGovDistribution(DISTR_PRECOMPILE_ADDRESS).withdrawDelegationRewards(validator)) {
-            revert FailedToWithdrawRewards();
-        }
-    }
+    // ------------ stakeManager ------------
 
     function delegateMulti(string[] memory _validators, uint256 _amount) external override onlyStakeManager {
         uint256 willDelegateAmount = _amount / TWELVE_DECIMALS;
@@ -210,19 +208,27 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
         }
     }
 
-    function getDelegated(string memory _validator) external view override returns (uint256) {
-        return delegatedAmountOfValidator[_validator];
-    }
-
-    function getTotalDelegated(string[] calldata _validators) external view override returns (uint256) {
-        uint256 total;
-        for (uint256 i = 0; i < _validators.length; ++i) {
-            total += delegatedAmountOfValidator[_validators[i]];
+    function _govDelegate(string memory validator, uint256 amount) internal virtual {
+        if (!IGovStaking(STAKING_PRECOMPILE_ADDRESS).delegate{value: amount}(validator)) {
+            revert FailedToDelegate();
         }
-        return total;
     }
 
-    function version() external view returns (uint8) {
-        return _getInitializedVersion();
+    function _govUndelegate(string memory validator, uint256 amount) internal virtual {
+        if (!IGovStaking(STAKING_PRECOMPILE_ADDRESS).undelegate(validator, amount)) {
+            revert FailedToUndelegate();
+        }
+    }
+
+    function _govRedelegate(string memory srcValidator, string memory dstValidator, uint256 amount) internal virtual {
+        if (!IGovStaking(STAKING_PRECOMPILE_ADDRESS).redelegate(srcValidator, dstValidator, amount)) {
+            revert FailedToRedelegate();
+        }
+    }
+
+    function _govWithdrawRewards(string memory validator) internal virtual {
+        if (!IGovDistribution(DISTR_PRECOMPILE_ADDRESS).withdrawDelegationRewards(validator)) {
+            revert FailedToWithdrawRewards();
+        }
     }
 }
