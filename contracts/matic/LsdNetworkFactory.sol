@@ -59,12 +59,7 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
     // ------------ getter ------------
 
     function lsdTokensOfCreater(address _creater) public view returns (address[] memory) {
-        uint256 length = lsdTokensOf[_creater].length;
-        address[] memory list = new address[](length);
-        for (uint256 i = 0; i < length; i++) {
-            list[i] = lsdTokensOf[_creater][i];
-        }
-        return list;
+        return lsdTokensOf[_creater];
     }
 
     // ------------ settings ------------
