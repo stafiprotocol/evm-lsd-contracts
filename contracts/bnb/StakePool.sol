@@ -162,7 +162,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
         address _validatorDst,
         uint256 _amount
     ) external payable override onlyStakeManager {
-        uint256 redelegateFee = (_amount * stakeHub.redelegateFeeRate()) / REDELEGATE_FEE_RATE_BASE;
+        uint256 redelegateFee = (_amount * stakeHub.redelegateFeeRate()) / stakeHub.REDELEGATE_FEE_RATE_BASE();
         if (msg.value < redelegateFee) revert NotEnoughRedelegateFee();
         _govRedelegate(_validatorSrc, _validatorDst, _amount, msg.value);
     }

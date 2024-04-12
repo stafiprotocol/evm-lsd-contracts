@@ -17,6 +17,9 @@ contract FactoryTest is Test {
     address fakeValidator1 = 0xAf581B49EA5B09d69D86A8eD801EF0cEdA33Ae34;
     address fakeValidator2 = 0x696606f04f7597F444265657C8c13039Fd759b14;
     address fakeValidator3 = 0x341e228f22D4ec16297DD05A9d6347C74c125F66;
+    address[] vals = [fakeValidator1, fakeValidator2, fakeValidator3];
+
+    IStakeHub stakeHub = IStakeHub(0x0000000000000000000000000000000000002002);
 
     receive() external payable {}
 
@@ -45,11 +48,6 @@ contract FactoryTest is Test {
     function test_create() public {
         assertEq(factory.factoryAdmin(), admin);
         address networkAdmin = address(this);
-
-        address[] memory vals = new address[](3);
-        vals[0] = fakeValidator1;
-        vals[1] = fakeValidator2;
-        vals[2] = fakeValidator3;
 
         factory.createLsdNetwork("name", "symbol", vals, networkAdmin);
 
@@ -128,20 +126,22 @@ contract FactoryTest is Test {
         assertEq(postBalance - preBalance, 2 ether);
 
         uint256 redelegateAmount = 1.2 ether;
-        stakeManager.redelegate{value: (redelegateAmount * 2) / 100000}(
-            stakePoolAddr,
-            fakeValidator1,
-            fakeValidator2,
-            redelegateAmount
-        );
+        stakeManager.redelegate{
+            value: (redelegateAmount * stakeHub.redelegateFeeRate()) / stakeHub.REDELEGATE_FEE_RATE_BASE()
+        }(stakePoolAddr, fakeValidator1, fakeValidator2, redelegateAmount);
+
+        console.log("pending delegate: %d", stakePool.pendingDelegate());
 
         vm.warp(39363333 + 86400 * 11); // time flies
         assertEq(stakeManager.currentEra(), 11);
 
         stakeManager.newEra();
 
+        console.log("pending delegate: %d", stakePool.pendingDelegate());
+        console.log("total delegate: %d", stakePool.getTotalDelegated(vals));
         // era 11
         assertEq(stakeManager.latestEra(), 11);
         assertEq(stakeManager.currentEra(), 11);
+        assertEq(stakeManager.rate(), 1e18);
     }
 }

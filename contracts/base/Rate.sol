@@ -53,7 +53,7 @@ abstract contract Rate is Ownable, IRateProvider {
             return EIGHTEEN_DECIMALS;
         }
         uint256 calRate = (_totalActive * EIGHTEEN_DECIMALS) / _totalLst;
-        if (calRate < EIGHTEEN_DECIMALS && EIGHTEEN_DECIMALS - calRate < 10) {
+        if (calRate < EIGHTEEN_DECIMALS && EIGHTEEN_DECIMALS - calRate < 20) {
             calRate = EIGHTEEN_DECIMALS;
         }
         return calRate;
