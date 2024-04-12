@@ -27,12 +27,6 @@ forge build
 forge test
 ```
 
-### Format
-
-```shell
-forge fmt
-```
-
 ### Gas Snapshots
 
 ```shell

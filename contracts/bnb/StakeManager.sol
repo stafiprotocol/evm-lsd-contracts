@@ -107,14 +107,14 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         address _srcValidator,
         address _dstValidator,
         uint256 _amount
-    ) external onlyDelegationBalancer {
+    ) external payable onlyDelegationBalancer {
         if (!validatorsOf[_poolAddress].contains(_srcValidator)) revert ValidatorNotExist();
         if (_srcValidator == _dstValidator) revert ValidatorDuplicated();
         if (_amount == 0) revert ZeroRedelegateAmount();
         if (!validatorsOf[_poolAddress].contains(_dstValidator)) {
             validatorsOf[_poolAddress].add(_dstValidator);
         }
-        IBnbStakePool(_poolAddress).redelegate(_srcValidator, _dstValidator, _amount);
+        IBnbStakePool(_poolAddress).redelegate{value: msg.value}(_srcValidator, _dstValidator, _amount);
         if (IBnbStakePool(_poolAddress).getDelegated(_srcValidator) == 0) {
             validatorsOf[_poolAddress].remove(_srcValidator);
         }

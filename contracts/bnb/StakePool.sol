@@ -18,6 +18,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
     error AmountZero();
     error FailedToWithdrawForStaker();
     error NotEnoughAmountToUndelegate();
+    error NotEnoughRedelegateFee();
     error ValidatorsEmpty();
 
     event Delegate(address validator, uint256 amount);
@@ -26,6 +27,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
     event WithdrawForStaker(address staker, uint256 amount);
     event ClaimUndelegated(address validator, uint256 number);
 
+    uint256 public constant REDELEGATE_FEE_RATE_BASE = 100000; // 100%
     IStakeHub constant stakeHub = IStakeHub(0x0000000000000000000000000000000000002002);
 
     address public stakeManagerAddress;
@@ -62,8 +64,12 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
     function _govUndelegate(address _validator, uint256 _amount) internal virtual {
         IStakeCredit stakeCredit = IStakeCredit(stakeHub.getValidatorCreditContract(_validator));
         uint256 share = stakeCredit.getSharesByPooledBNB(_amount);
-        if (stakeCredit.getPooledBNBByShares(share) < _amount && share < stakeCredit.balanceOf(address(this))) {
+        uint256 balance = stakeCredit.balanceOf(address(this));
+        if (stakeCredit.getPooledBNBByShares(share) < _amount && share < balance) {
             share += 1;
+        }
+        if (share > balance) {
+            share = balance;
         }
 
         stakeHub.undelegate(_validator, share);
@@ -80,11 +86,26 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
         }
     }
 
-    function _govRedelegate(address _srcValidator, address _dstValidator, uint256 _amount) internal virtual {
+    function _govRedelegate(
+        address _srcValidator,
+        address _dstValidator,
+        uint256 _amount,
+        uint256 _fee
+    ) internal virtual {
         IStakeCredit stakeCredit = IStakeCredit(stakeHub.getValidatorCreditContract(_srcValidator));
         uint256 share = stakeCredit.getSharesByPooledBNB(_amount);
 
         stakeHub.redelegate(_srcValidator, _dstValidator, share, false);
+
+        if (_fee > 0) {
+            uint256 minDelegationAmount = stakeHub.minDelegationBNBChange();
+            uint256 willDelegateAmount = pendingDelegate + _fee;
+            if (willDelegateAmount < minDelegationAmount) {
+                pendingDelegate = willDelegateAmount;
+            } else {
+                _govDelegate(_dstValidator, willDelegateAmount);
+            }
+        }
 
         emit Redelegate(_srcValidator, _dstValidator, _amount);
     }
@@ -171,8 +192,10 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
         address _validatorSrc,
         address _validatorDst,
         uint256 _amount
-    ) external override onlyStakeManager {
-        _govRedelegate(_validatorSrc, _validatorDst, _amount);
+    ) external payable override onlyStakeManager {
+        uint256 redelegateFee = (_amount * stakeHub.redelegateFeeRate()) / REDELEGATE_FEE_RATE_BASE;
+        if (msg.value < redelegateFee) revert NotEnoughRedelegateFee();
+        _govRedelegate(_validatorSrc, _validatorDst, _amount, msg.value);
     }
 
     function claimUndelegated(address[] memory _validators) external override onlyStakeManager {

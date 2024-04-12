@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 interface IBnbStakePool {
-    function redelegate(address _validatorSrc, address _validatorDst, uint256 _amount) external;
+    function redelegate(address _validatorSrc, address _validatorDst, uint256 _amount) external payable;
 
     function withdrawForStaker(address _staker, uint256 _amount) external;
 

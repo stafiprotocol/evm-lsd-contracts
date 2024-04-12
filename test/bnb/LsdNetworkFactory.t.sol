@@ -14,7 +14,9 @@ contract FactoryTest is Test {
     LsdNetworkFactory public factory;
     address admin = address(1);
 
-    address fakeValidator = 0xAf581B49EA5B09d69D86A8eD801EF0cEdA33Ae34;
+    address fakeValidator1 = 0xAf581B49EA5B09d69D86A8eD801EF0cEdA33Ae34;
+    address fakeValidator2 = 0x696606f04f7597F444265657C8c13039Fd759b14;
+    address fakeValidator3 = 0x341e228f22D4ec16297DD05A9d6347C74c125F66;
 
     receive() external payable {}
 
@@ -39,13 +41,15 @@ contract FactoryTest is Test {
     error NotVoter();
     error ZeroWithdrawAmount();
 
-    // forge test --fork-url=$RPC_URL --match-test test_create --match-path ./test/bnb/LsdNetworkFactory.t.sol -vvvvv
+    // forge test --fork-url=$BSC_TESTNET_RPC_URL --match-test test_create --match-path ./test/bnb/LsdNetworkFactory.t.sol -vvvvv
     function test_create() public {
         assertEq(factory.factoryAdmin(), admin);
-        address networkAdmin = address(100);
+        address networkAdmin = address(this);
 
-        address[] memory vals = new address[](1);
-        vals[0] = fakeValidator;
+        address[] memory vals = new address[](3);
+        vals[0] = fakeValidator1;
+        vals[1] = fakeValidator2;
+        vals[2] = fakeValidator3;
 
         factory.createLsdNetwork("name", "symbol", vals, networkAdmin);
 
@@ -77,11 +81,11 @@ contract FactoryTest is Test {
         // era 1
         assertEq(address(stakePool).balance, 0);
 
-        stakeManager.stake{value: 2 ether}();
+        stakeManager.stake{value: 4 ether}();
 
-        assertEq(lsdToken.balanceOf(address(this)), 2 ether);
+        assertEq(lsdToken.balanceOf(address(this)), 4 ether);
 
-        assertEq(address(stakePool).balance, 2 ether);
+        assertEq(address(stakePool).balance, 4 ether);
         assertEq(stakeManager.latestEra(), 1);
         assertEq(stakeManager.currentEra(), 1);
         assertEq(stakeManager.rate(), 1e18);
@@ -97,10 +101,10 @@ contract FactoryTest is Test {
         assertEq(stakeManager.currentEra(), 2);
         assertEq(stakeManager.rate(), 1e18);
 
-        lsdToken.approve(stakeManagerAddr, 2 ether);
-        stakeManager.unstake(1 ether);
+        lsdToken.approve(stakeManagerAddr, 4 ether);
+        stakeManager.unstake(2 ether);
 
-        assertEq(lsdToken.balanceOf(address(this)), 1 ether);
+        assertEq(lsdToken.balanceOf(address(this)), 2 ether);
 
         for (uint256 i = 3; i <= 10; ++i) {
             vm.warp(39363333 + 86400 * i); // time flies
@@ -114,8 +118,30 @@ contract FactoryTest is Test {
         assertEq(stakeManager.currentEra(), 10);
         assertEq(stakeManager.rate(), 1e18);
 
-        console.log("stake pool balance: %d", address(stakePool).balance);
+        assertEq(address(stakePool).balance, 2 ether);
+        uint256 preBalance = address(this).balance;
 
         stakeManager.withdraw();
+
+        uint256 postBalance = address(this).balance;
+        assertEq(address(stakePool).balance, 0);
+        assertEq(postBalance - preBalance, 2 ether);
+
+        uint256 redelegateAmount = 1.2 ether;
+        stakeManager.redelegate{value: (redelegateAmount * 2) / 100000}(
+            stakePoolAddr,
+            fakeValidator1,
+            fakeValidator2,
+            redelegateAmount
+        );
+
+        vm.warp(39363333 + 86400 * 11); // time flies
+        assertEq(stakeManager.currentEra(), 11);
+
+        stakeManager.newEra();
+
+        // era 11
+        assertEq(stakeManager.latestEra(), 11);
+        assertEq(stakeManager.currentEra(), 11);
     }
 }
