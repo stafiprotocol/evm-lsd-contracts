@@ -197,13 +197,10 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
 
     function withdrawWithPool(address _poolAddress) public {
         uint256 totalWithdrawAmount;
+        uint256[] memory unstakeIndexList = getUnstakeIndexListOf(msg.sender);
         uint256 length = unstakesOfUser[msg.sender].length();
-        uint256[] memory unstakeIndexList = new uint256[](length);
         int256[] memory emitUnstakeIndexList = new int256[](length);
 
-        for (uint256 i = 0; i < length; ++i) {
-            unstakeIndexList[i] = unstakesOfUser[msg.sender].at(i);
-        }
         uint256 curEra = currentEra();
         for (uint256 i = 0; i < length; ++i) {
             uint256 unstakeIndex = unstakeIndexList[i];

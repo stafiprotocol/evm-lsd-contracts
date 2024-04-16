@@ -10,7 +10,7 @@ abstract contract Ownable is Errors, Initializable {
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     modifier onlyOwner() {
-        if (owner() != msg.sender) revert();
+        if (owner() != msg.sender) revert CallerNotAllowed();
         _;
     }
 
