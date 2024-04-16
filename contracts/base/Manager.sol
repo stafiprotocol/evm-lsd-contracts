@@ -9,6 +9,8 @@ import "./Protocol.sol";
 import "./DelegationBalancer.sol";
 
 abstract contract Manager is Era, Rate, StakePoolManager, UnstakePoolManager, Protocol, DelegationBalancer {
+    uint256 public constant MAX_VALIDATORS_LEN = 10;
+
     function _initManagerParams(
         address _lsdToken,
         address _poolAddress,

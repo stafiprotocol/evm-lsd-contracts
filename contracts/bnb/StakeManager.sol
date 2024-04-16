@@ -24,7 +24,6 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     error AlreadyWithdrawed();
     error EraNotMatch();
     error CommissionRateInvalid();
-    error ValidatorsEmpty();
 
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.UintSet;
@@ -105,6 +104,16 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         }
 
         if (!bondedPools.remove(_poolAddress)) revert PoolNotExist(_poolAddress);
+    }
+
+    function addValidator(address _poolAddress, address _validator) external onlyOwner {
+        if (validatorsOf[_poolAddress].length() >= MAX_VALIDATORS_LEN) revert ValidatorsLenExceedLimit();
+        if (!validatorsOf[_poolAddress].add(_validator)) revert ValidatorDuplicated();
+    }
+
+    function rmValidator(address _poolAddress, address _validator) external onlyOwner {
+        if (IBnbStakePool(_poolAddress).getDelegated(_validator) != 0) revert DelegateNotEmpty();
+        if (!validatorsOf[_poolAddress].remove(_validator)) revert ValidatorNotExist();
     }
 
     function setFactoryCommissionRate(uint256 _factoryCommissionRate) external onlyOwner {

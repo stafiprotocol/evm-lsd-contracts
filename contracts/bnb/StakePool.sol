@@ -14,7 +14,6 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
     error FailedToWithdrawForStaker();
     error NotEnoughAmountToUndelegate();
     error NotEnoughRedelegateFee();
-    error ValidatorsEmpty();
 
     event Delegate(address validator, uint256 amount);
     event Undelegate(address validator, uint256 amount);

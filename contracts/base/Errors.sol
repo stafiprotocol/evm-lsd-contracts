@@ -9,4 +9,6 @@ interface Errors {
     error CallerNotAllowed();
     error FailedToCall();
     error NotAuthorizedLsdToken();
+    error ValidatorsLenExceedLimit();
+    error ValidatorsEmpty();
 }

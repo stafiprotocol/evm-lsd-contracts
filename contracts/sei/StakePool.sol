@@ -20,7 +20,6 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
     error FailedToWithdrawRewards();
     error FailedToWithdrawForStaker();
     error NotEnoughAmountToUndelegate();
-    error ValidatorsEmpty();
 
     event Delegate(string validator, uint256 amount);
     event Undelegate(string validator, uint256 amount);

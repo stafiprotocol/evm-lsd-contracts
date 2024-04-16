@@ -73,6 +73,10 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         factoryAddress = _factoryAddress;
         factoryCommissionRate = 10e16; // 10%
 
+        if (_validators.length == 0) {
+            revert ValidatorsEmpty();
+        }
+
         for (uint256 i = 0; i < _validators.length; ++i) {
             validatorsOf[_poolAddress].add(_validators[i]);
         }
@@ -104,6 +108,16 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         }
 
         if (!bondedPools.remove(_poolAddress)) revert PoolNotExist(_poolAddress);
+    }
+
+    function addValidator(address _poolAddress, string calldata _validator) external onlyOwner {
+        if (validatorsOf[_poolAddress].length() >= MAX_VALIDATORS_LEN) revert ValidatorsLenExceedLimit();
+        if (!validatorsOf[_poolAddress].add(_validator)) revert ValidatorDuplicated();
+    }
+
+    function rmValidator(address _poolAddress, string calldata _validator) external onlyOwner {
+        if (ISeiStakePool(_poolAddress).getDelegated(_validator) != 0) revert DelegateNotEmpty();
+        if (!validatorsOf[_poolAddress].remove(_validator)) revert ValidatorNotExist();
     }
 
     function setFactoryCommissionRate(uint256 _factoryCommissionRate) external onlyOwner {

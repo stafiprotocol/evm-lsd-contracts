@@ -109,6 +109,16 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         if (!bondedPools.remove(_poolAddress)) revert PoolNotExist(_poolAddress);
     }
 
+    function addValidator(address _poolAddress, uint256 _validatorId) external onlyOwner {
+        if (validatorIdsOf[_poolAddress].length() >= MAX_VALIDATORS_LEN) revert ValidatorsLenExceedLimit();
+        if (!validatorIdsOf[_poolAddress].add(_validatorId)) revert ValidatorDuplicated();
+    }
+
+    function rmValidator(address _poolAddress, uint256 _validatorId) external onlyOwner {
+        if (IMaticStakePool(_poolAddress).getDelegated(_validatorId) != 0) revert DelegateNotEmpty();
+        if (!validatorIdsOf[_poolAddress].remove(_validatorId)) revert ValidatorNotExist();
+    }
+
     function approve(address _poolAddress, uint256 _amount) external onlyOwner {
         IMaticStakePool(_poolAddress).approveForStakeManager(stakeTokenAddress, _amount);
     }
