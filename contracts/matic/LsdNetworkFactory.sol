@@ -11,6 +11,8 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/ILsdNetworkFactory.sol";
 
 contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory {
+    using SafeERC20 for IERC20;
+
     address public govStakeManagerAddress;
     address public validatorShareAddress;
     address public stakeTokenAddress;
@@ -21,6 +23,7 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
     address public factoryAdmin;
     mapping(address => NetworkContracts) public networkContractsOfLsdToken;
     mapping(address => address[]) private lsdTokensOf;
+    mapping(address => uint256) public totalClaimedLsdToken;
 
     modifier onlyFactoryAdmin() {
         if (msg.sender != factoryAdmin) {
@@ -80,6 +83,11 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
         stakePoolLogicAddress = _stakePoolLogicAddress;
     }
 
+    function factoryClaim(address _lsdToken, address _recipient, uint256 _amount) external onlyFactoryAdmin {
+        IERC20(_lsdToken).safeTransfer(_recipient, _amount);
+        totalClaimedLsdToken[_lsdToken] += _amount;
+    }
+
     // ------------ user ------------
 
     function createLsdNetwork(
@@ -133,7 +141,8 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
                 stakeTokenAddress,
                 contracts._stakePool,
                 _validatorId,
-                _networkAdmin
+                _networkAdmin,
+                this
             )
         );
         if (!success) {

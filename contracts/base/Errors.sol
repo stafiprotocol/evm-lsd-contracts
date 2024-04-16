@@ -11,4 +11,5 @@ interface Errors {
     error NotAuthorizedLsdToken();
     error ValidatorsLenExceedLimit();
     error ValidatorsEmpty();
+    error CommissionRateInvalid();
 }

@@ -63,11 +63,12 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         address _stakeTokenAddress,
         address _poolAddress,
         uint256 _validatorId,
-        address _owner
+        address _owner,
+        address _factoryAddress
     ) external virtual initializer {
         if (_stakeTokenAddress == address(0)) revert ZeroStakeTokenAddress();
 
-        _initManagerParams(_lsdToken, _poolAddress, 4, 0);
+        _initManagerParams(_lsdToken, _poolAddress, _factoryAddress, 4, 0);
 
         validatorIdsOf[_poolAddress].add(_validatorId);
         stakeTokenAddress = _stakeTokenAddress;
@@ -321,18 +322,11 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
             poolInfoOf[poolAddress] = poolInfo;
         }
 
-        // cal protocol fee
-        if (totalNewReward > 0) {
-            uint256 lsdTokenProtocolFee = (totalNewReward * protocolFeeCommission) / rate;
-            if (lsdTokenProtocolFee > 0) {
-                totalProtocolFee = totalProtocolFee + lsdTokenProtocolFee;
-                // mint lsdToken
-                ILsdToken(lsdToken).mint(address(this), lsdTokenProtocolFee);
-            }
-        }
+        // ditribute protocol fee
+        _distributeReward(totalNewReward, rate);
 
         // update rate
-        uint256 newRate = (newTotalActive * 1e18) / (ERC20Burnable(lsdToken).totalSupply());
+        uint256 newRate = _calRate(newTotalActive, ERC20(lsdToken).totalSupply());
         _setEraRate(_era, newRate);
 
         emit ExecuteNewEra(_era, newRate);

@@ -24,16 +24,12 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     error UnstakeTimesExceedLimit();
     error AlreadyWithdrawed();
     error EraNotMatch();
-    error CommissionRateInvalid();
 
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.UintSet;
     using EnumerableStringSet for EnumerableStringSet.StringSet;
 
     uint256 constant TWELVE_DECIMALS = 1e12;
-
-    address public factoryAddress;
-    uint256 public factoryCommissionRate;
 
     mapping(address => EnumerableStringSet.StringSet) validatorsOf;
 
@@ -66,12 +62,9 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     ) external initializer {
         _transferOwnership(_owner);
 
-        _initManagerParams(_lsdToken, _poolAddress, 22, 0);
+        _initManagerParams(_lsdToken, _poolAddress, _factoryAddress, 22, 0);
 
         minStakeAmount = TWELVE_DECIMALS;
-
-        factoryAddress = _factoryAddress;
-        factoryCommissionRate = 10e16; // 10%
 
         if (_validators.length == 0) {
             revert ValidatorsEmpty();
@@ -118,13 +111,6 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     function rmValidator(address _poolAddress, string calldata _validator) external onlyOwner {
         if (ISeiStakePool(_poolAddress).getDelegated(_validator) != 0) revert DelegateNotEmpty();
         if (!validatorsOf[_poolAddress].remove(_validator)) revert ValidatorNotExist();
-    }
-
-    function setFactoryCommissionRate(uint256 _factoryCommissionRate) external onlyOwner {
-        if (_factoryCommissionRate > 1e18) {
-            revert CommissionRateInvalid();
-        }
-        factoryCommissionRate = _factoryCommissionRate;
     }
 
     // ------ delegation balancer
@@ -293,22 +279,8 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
             poolInfoOf[poolAddress] = poolInfo;
         }
 
-        // cal protocol fee
-        if (totalNewReward > 0) {
-            uint256 lsdTokenProtocolFee = (totalNewReward * protocolFeeCommission) / rate;
-            uint256 factoryFee = (lsdTokenProtocolFee * factoryCommissionRate) / EIGHTEEN_DECIMALS;
-            lsdTokenProtocolFee = lsdTokenProtocolFee - factoryFee;
-
-            if (lsdTokenProtocolFee > 0) {
-                totalProtocolFee = totalProtocolFee + lsdTokenProtocolFee;
-                // mint lsdToken
-                ILsdToken(lsdToken).mint(address(this), lsdTokenProtocolFee);
-            }
-
-            if (factoryFee > 0) {
-                ILsdToken(lsdToken).mint(factoryAddress, factoryFee);
-            }
-        }
+        // ditribute protocol fee
+        _distributeReward(totalNewReward, rate);
 
         // update rate
         uint256 newRate = _calRate(newTotalActive, ERC20(lsdToken).totalSupply());

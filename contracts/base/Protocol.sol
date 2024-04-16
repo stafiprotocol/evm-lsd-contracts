@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./Ownable.sol";
+import "../interfaces/ILsdToken.sol";
 
 abstract contract Protocol is Ownable {
     // Custom errors to provide more descriptive revert messages.
@@ -16,6 +17,9 @@ abstract contract Protocol is Ownable {
     uint256 public protocolFeeCommission;
     uint256 public totalProtocolFee;
 
+    address public factoryAddress;
+    uint256 public factoryFeeCommission;
+
     function withdrawProtocolFee(address _to) external virtual onlyOwner {
         IERC20(lsdToken).safeTransfer(_to, IERC20(lsdToken).balanceOf(address(this)));
     }
@@ -27,11 +31,39 @@ abstract contract Protocol is Ownable {
         protocolFeeCommission = _protocolFeeCommission;
     }
 
-    function _initProtocolParams(address _lsdToken) internal virtual onlyInitializing {
+    function setFactoryFeeCommission(uint256 _factoryFeeCommission) external onlyOwner {
+        if (_factoryFeeCommission > 1e18) {
+            revert CommissionRateInvalid();
+        }
+        factoryFeeCommission = _factoryFeeCommission;
+    }
+
+    function _initProtocolParams(address _lsdToken, address _factoryAddress) internal virtual onlyInitializing {
         if (protocolFeeCommission != 0) revert AlreadyInitialized();
         if (_lsdToken == address(0)) revert AddressNotAllowed();
+        if (_factoryAddress == address(0)) revert AddressNotAllowed();
 
         lsdToken = _lsdToken;
+        factoryAddress = _factoryAddress;
         protocolFeeCommission = 1e17;
+        factoryFeeCommission = 1e17;
+    }
+
+    function _distributeReward(uint256 _totalNewReward, uint256 _rate) internal {
+        if (_totalNewReward > 0) {
+            uint256 lsdTokenProtocolFee = (_totalNewReward * protocolFeeCommission) / _rate;
+            uint256 factoryFee = (lsdTokenProtocolFee * factoryFeeCommission) / 1e18;
+            lsdTokenProtocolFee = lsdTokenProtocolFee - factoryFee;
+
+            if (lsdTokenProtocolFee > 0) {
+                totalProtocolFee = totalProtocolFee + lsdTokenProtocolFee;
+                // mint lsdToken
+                ILsdToken(lsdToken).mint(address(this), lsdTokenProtocolFee);
+            }
+
+            if (factoryFee > 0) {
+                ILsdToken(lsdToken).mint(factoryAddress, factoryFee);
+            }
+        }
     }
 }
