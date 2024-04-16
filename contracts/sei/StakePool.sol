@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.19;
 
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "../base/Ownable.sol";
 import "./interfaces/IGovStaking.sol";
 import "./interfaces/IGovDistribution.sol";
 import "./interfaces/ISeiStakePool.sol";
-import "../LsdToken.sol";
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
     // Custom errors to provide more descriptive revert messages.
