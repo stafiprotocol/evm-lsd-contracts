@@ -3,13 +3,10 @@ pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "../base/Ownable.sol";
 import "./interfaces/IBnbStakePool.sol";
-import "../LsdToken.sol";
 import "./interfaces/IStakeHub.sol";
 import "./interfaces/IStakeCredit.sol";
-import "./interfaces/IBnbStakePool.sol";
 
 contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
     // Custom errors to provide more descriptive revert messages.
@@ -89,10 +86,9 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
             return;
         }
 
+        pendingDelegate = 0;
         uint256 averageAmount = willDelegateAmount / _validators.length;
         if (averageAmount < minDelegationAmount) {
-            pendingDelegate = 0;
-
             _govDelegate(_validators[0], willDelegateAmount);
 
             return;
@@ -104,8 +100,6 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
 
             _govDelegate(_validators[i], amount);
         }
-
-        pendingDelegate = 0;
     }
 
     function undelegateMulti(address[] memory _validators, uint256 _amount) external override onlyStakeManager {

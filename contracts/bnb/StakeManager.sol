@@ -24,6 +24,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     error AlreadyWithdrawed();
     error EraNotMatch();
     error CommissionRateInvalid();
+    error ValidatorsEmpty();
 
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.UintSet;
@@ -68,6 +69,10 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
 
         factoryAddress = _factoryAddress;
         factoryCommissionRate = 1e17; // 10%
+
+        if (_validators.length == 0) {
+            revert ValidatorsEmpty();
+        }
 
         for (uint256 i = 0; i < _validators.length; ++i) {
             validatorsOf[_poolAddress].add(_validators[i]);
