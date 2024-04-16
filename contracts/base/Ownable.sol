@@ -5,19 +5,17 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./Errors.sol";
 
 abstract contract Ownable is Errors, Initializable {
-    error NotOwner();
-
     address private _owner;
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
     modifier onlyOwner() {
-        if (owner() != msg.sender) revert NotOwner();
+        if (owner() != msg.sender) revert();
         _;
     }
 
     modifier onlyOwnerOrInitializing() {
-        if (!_isInitializing() && owner() != msg.sender) revert NotOwner();
+        if (!_isInitializing() && owner() != msg.sender) revert CallerNotAllowed();
         _;
     }
 

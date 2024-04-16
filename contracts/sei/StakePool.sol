@@ -12,8 +12,6 @@ import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet
 
 contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
     // Custom errors to provide more descriptive revert messages.
-    error NotStakeManager();
-    error NotValidAddress();
     error DelegateAmountTooSmall();
     error UndelegateAmountTooSmall();
     error FailedToDelegate();
@@ -44,7 +42,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
     uint256 public lastUndelegateIndex;
 
     modifier onlyStakeManager() {
-        if (stakeManagerAddress != msg.sender) revert NotStakeManager();
+        if (stakeManagerAddress != msg.sender) revert CallerNotAllowed();
         _;
     }
 
@@ -54,7 +52,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
     }
 
     function initialize(address _stakeManagerAddress, address _owner) external initializer {
-        if (_stakeManagerAddress == address(0)) revert NotValidAddress();
+        if (_stakeManagerAddress == address(0)) revert AddressNotAllowed();
 
         _transferOwnership(_owner);
         stakeManagerAddress = _stakeManagerAddress;
@@ -201,7 +199,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
 
     function withdrawForStaker(address _staker, uint256 _amount) external override onlyStakeManager {
         if (_staker == address(0)) {
-            revert NotValidAddress();
+            revert AddressNotAllowed();
         }
         if (_amount > 0) {
             (bool result, ) = _staker.call{value: _amount}("");

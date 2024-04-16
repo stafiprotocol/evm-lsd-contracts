@@ -4,13 +4,10 @@ pragma solidity 0.8.19;
 import "./Ownable.sol";
 
 abstract contract DelegationBalancer is Ownable {
-    // Custom errors to provide more descriptive revert messages.
-    error NotDelegationBalancer();
-
     address public delegationBalancer;
 
     modifier onlyDelegationBalancer() {
-        if (delegationBalancer != msg.sender) revert NotDelegationBalancer();
+        if (delegationBalancer != msg.sender) revert CallerNotAllowed();
         _;
     }
 

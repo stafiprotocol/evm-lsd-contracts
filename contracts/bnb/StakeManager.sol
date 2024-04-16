@@ -23,8 +23,6 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     error UnstakeTimesExceedLimit();
     error AlreadyWithdrawed();
     error EraNotMatch();
-    error WithdrawRewardsFailed();
-    error BalanceNotMatch();
     error CommissionRateInvalid();
 
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -49,7 +47,6 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     event Delegate(address pool, address[] validators, uint256 amount);
     event Undelegate(address pool, address[] validators, uint256 amount);
     event NewReward(address pool, uint256 amount);
-    event NewClaimedNonce(address pool, uint256 validator, uint256 nonce);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
@@ -265,7 +262,12 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
             // cal total active
             uint256 newPoolActive = stakePool.getTotalDelegated(validators);
             newTotalActive += newPoolActive;
-            totalNewReward += newPoolActive > poolInfo.active ? newPoolActive - poolInfo.active : 0;
+
+            // cal total reward
+            uint256 poolNewReward = newPoolActive > poolInfo.active ? newPoolActive - poolInfo.active : 0;
+            totalNewReward += poolNewReward;
+
+            emit NewReward(poolAddress, poolNewReward);
 
             // update pool state
             poolInfo.era = latestEra;

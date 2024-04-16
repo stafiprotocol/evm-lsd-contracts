@@ -11,8 +11,6 @@ import "../base/Ownable.sol";
 
 contract StakePool is Initializable, UUPSUpgradeable, Ownable, IMaticStakePool {
     // Custom errors to provide more descriptive revert messages.
-    error NotStakeManager();
-    error NotValidAddress();
     error FailedToWithdrawForStaker();
 
     using SafeERC20 for IERC20;
@@ -21,7 +19,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IMaticStakePool {
     address public govStakeManagerAddress;
 
     modifier onlyStakeManager() {
-        if (stakeManagerAddress != msg.sender) revert NotStakeManager();
+        if (stakeManagerAddress != msg.sender) revert CallerNotAllowed();
         _;
     }
 
@@ -35,9 +33,9 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IMaticStakePool {
         address _govStakeManagerAddress,
         address _owner
     ) external initializer {
-        if (_stakeManagerAddress == address(0)) revert NotValidAddress();
-        if (_govStakeManagerAddress == address(0)) revert NotValidAddress();
-        if (_owner == address(0)) revert NotValidAddress();
+        if (_stakeManagerAddress == address(0) || _govStakeManagerAddress == address(0) || _owner == address(0)) {
+            revert AddressNotAllowed();
+        }
 
         stakeManagerAddress = _stakeManagerAddress;
         govStakeManagerAddress = _govStakeManagerAddress;
@@ -46,6 +44,31 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IMaticStakePool {
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+
+    // ------------ getter ------------
+
+    function version() external view returns (uint8) {
+        return _getInitializedVersion();
+    }
+
+    function getDelegated(uint256 _validator) external view override returns (uint256) {
+        address valAddress = IGovStakeManager(govStakeManagerAddress).getValidatorContract(_validator);
+        (uint256 totalStake, ) = IValidatorShare(valAddress).getTotalStake(address(this));
+        return totalStake;
+    }
+
+    function getTotalDelegated(uint256[] calldata _validators) external view override returns (uint256) {
+        uint256 totalStake;
+        IGovStakeManager govStakeManager = IGovStakeManager(govStakeManagerAddress);
+        for (uint256 j = 0; j < _validators.length; ++j) {
+            address valAddress = govStakeManager.getValidatorContract(_validators[j]);
+            (uint256 stake, ) = IValidatorShare(valAddress).getTotalStake(address(this));
+            totalStake = totalStake + stake;
+        }
+        return totalStake;
+    }
+
+    // ------------ stakeManager ------------
 
     function checkAndWithdrawRewards(
         uint256[] calldata _validators
@@ -126,26 +149,5 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IMaticStakePool {
 
     function approveForStakeManager(address _erc20TokenAddress, uint256 amount) external override onlyStakeManager {
         IERC20(_erc20TokenAddress).safeIncreaseAllowance(govStakeManagerAddress, amount);
-    }
-
-    function getDelegated(uint256 _validator) external view override returns (uint256) {
-        address valAddress = IGovStakeManager(govStakeManagerAddress).getValidatorContract(_validator);
-        (uint256 totalStake, ) = IValidatorShare(valAddress).getTotalStake(address(this));
-        return totalStake;
-    }
-
-    function getTotalDelegated(uint256[] calldata _validators) external view override returns (uint256) {
-        uint256 totalStake;
-        IGovStakeManager govStakeManager = IGovStakeManager(govStakeManagerAddress);
-        for (uint256 j = 0; j < _validators.length; ++j) {
-            address valAddress = govStakeManager.getValidatorContract(_validators[j]);
-            (uint256 stake, ) = IValidatorShare(valAddress).getTotalStake(address(this));
-            totalStake = totalStake + stake;
-        }
-        return totalStake;
-    }
-
-    function version() external view returns (uint8) {
-        return _getInitializedVersion();
     }
 }

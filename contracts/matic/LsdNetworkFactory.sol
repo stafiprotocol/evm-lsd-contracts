@@ -24,7 +24,7 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
 
     modifier onlyFactoryAdmin() {
         if (msg.sender != factoryAdmin) {
-            revert NotFactoryAdmin();
+            revert CallerNotAllowed();
         }
         _;
     }

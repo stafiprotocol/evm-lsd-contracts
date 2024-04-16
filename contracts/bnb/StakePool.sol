@@ -13,8 +13,6 @@ import "./interfaces/IBnbStakePool.sol";
 
 contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
     // Custom errors to provide more descriptive revert messages.
-    error NotStakeManager();
-    error NotValidAddress();
     error AmountZero();
     error FailedToWithdrawForStaker();
     error NotEnoughAmountToUndelegate();
@@ -34,7 +32,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
     uint256 public pendingDelegate;
 
     modifier onlyStakeManager() {
-        if (stakeManagerAddress != msg.sender) revert NotStakeManager();
+        if (stakeManagerAddress != msg.sender) revert CallerNotAllowed();
         _;
     }
 
@@ -44,7 +42,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
     }
 
     function initialize(address _stakeManagerAddress, address _owner) external initializer {
-        if (_stakeManagerAddress == address(0) || _owner == address(0)) revert NotValidAddress();
+        if (_stakeManagerAddress == address(0) || _owner == address(0)) revert AddressNotAllowed();
 
         _transferOwnership(_owner);
         stakeManagerAddress = _stakeManagerAddress;
@@ -171,7 +169,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
     }
 
     function withdrawForStaker(address _staker, uint256 _amount) external override onlyStakeManager {
-        if (_staker == address(0)) revert NotValidAddress();
+        if (_staker == address(0)) revert AddressNotAllowed();
         if (_amount > 0) {
             (bool result, ) = _staker.call{value: _amount}("");
             if (!result) revert FailedToWithdrawForStaker();

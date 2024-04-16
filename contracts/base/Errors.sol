@@ -6,7 +6,7 @@ interface Errors {
     error AddressNotAllowed();
     error AlreadyInitialized();
 
-    error NotFactoryAdmin();
+    error CallerNotAllowed();
     error FailedToCall();
     error NotAuthorizedLsdToken();
 }

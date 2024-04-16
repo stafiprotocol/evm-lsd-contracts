@@ -53,7 +53,6 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     event Delegate(address pool, string[] validators, uint256 amount);
     event Undelegate(address pool, string[] validators, uint256 amount);
     event NewReward(address pool, uint256 amount);
-    event NewClaimedNonce(address pool, uint256 validator, uint256 nonce);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
