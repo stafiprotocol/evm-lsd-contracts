@@ -8,6 +8,7 @@ import "../interfaces/ILsdToken.sol";
 abstract contract Protocol is Ownable {
     // Custom errors to provide more descriptive revert messages.
     error GreaterThanMaxProtocolFeeCommission(uint256 protocolFeeCommission);
+    error InvalidRate();
 
     using SafeERC20 for IERC20;
 
@@ -39,9 +40,7 @@ abstract contract Protocol is Ownable {
     }
 
     function _initProtocolParams(address _lsdToken, address _factoryAddress) internal virtual onlyInitializing {
-        if (protocolFeeCommission != 0) revert AlreadyInitialized();
-        if (_lsdToken == address(0)) revert AddressNotAllowed();
-        if (_factoryAddress == address(0)) revert AddressNotAllowed();
+        if (_lsdToken == address(0) || _factoryAddress == address(0)) revert AddressNotAllowed();
 
         lsdToken = _lsdToken;
         factoryAddress = _factoryAddress;
@@ -50,6 +49,7 @@ abstract contract Protocol is Ownable {
     }
 
     function _distributeReward(uint256 _totalNewReward, uint256 _rate) internal {
+        if (_rate == 0) revert InvalidRate();
         if (_totalNewReward > 0) {
             uint256 lsdTokenProtocolFee = (_totalNewReward * protocolFeeCommission) / _rate;
             uint256 factoryFee = (lsdTokenProtocolFee * factoryFeeCommission) / 1e18;

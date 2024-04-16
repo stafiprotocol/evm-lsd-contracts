@@ -17,7 +17,6 @@ abstract contract DelegationBalancer is Ownable {
     }
 
     function _initDelegationBalancer() internal virtual onlyInitializing {
-        if (delegationBalancer != address(0)) revert AlreadyInitialized();
         delegationBalancer = owner();
     }
 }

@@ -33,8 +33,6 @@ abstract contract Era is Ownable {
     }
 
     function _initEraParams() internal virtual onlyInitializing {
-        if (eraSeconds != 0) revert AlreadyInitialized();
-
         eraSeconds = 86400;
         eraOffset = block.timestamp / eraSeconds;
     }

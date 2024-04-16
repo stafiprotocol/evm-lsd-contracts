@@ -68,12 +68,11 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     ) external virtual initializer {
         if (_stakeTokenAddress == address(0)) revert ZeroStakeTokenAddress();
 
+        _transferOwnership(_owner);
         _initManagerParams(_lsdToken, _poolAddress, _factoryAddress, 4, 0);
 
         validatorIdsOf[_poolAddress].add(_validatorId);
         stakeTokenAddress = _stakeTokenAddress;
-
-        _transferOwnership(_owner);
 
         IMaticStakePool(_poolAddress).approveForStakeManager(stakeTokenAddress, 1e28);
     }
