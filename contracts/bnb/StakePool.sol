@@ -68,7 +68,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
         return totalBnbAmount;
     }
 
-    function isValidatorInvalid(address _validator) external view returns (bool) {
+    function isInvalidValidator(address _validator) external view returns (bool) {
         (uint256 createdTime, bool jailed,) = stakeHub.getValidatorBasicInfo(_validator);
         if (createdTime == 0 || jailed) {
             return true;

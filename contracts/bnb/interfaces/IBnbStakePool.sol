@@ -16,5 +16,5 @@ interface IBnbStakePool {
 
     function claimUndelegated(address[] memory _validators) external;
 
-    function isValidatorInvalid(address _validator) external view returns (bool);
+    function isInvalidValidator(address _validator) external view returns (bool);
 }
