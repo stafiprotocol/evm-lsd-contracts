@@ -23,6 +23,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     error UnstakeTimesExceedLimit();
     error AlreadyWithdrawed();
     error EraNotMatch();
+    error ValidatorInvalid();
 
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.UintSet;
@@ -67,6 +68,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         }
 
         for (uint256 i = 0; i < _validators.length; ++i) {
+            if (IBnbStakePool(_poolAddress).isValidatorInvalid(_validators[i])) revert ValidatorInvalid();
             validatorsOf[_poolAddress].add(_validators[i]);
         }
     }
@@ -101,6 +103,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
 
     function addValidator(address _poolAddress, address _validator) external onlyOwner {
         if (validatorsOf[_poolAddress].length() >= MAX_VALIDATORS_LEN) revert ValidatorsLenExceedLimit();
+        if (IBnbStakePool(_poolAddress).isValidatorInvalid(_validator)) revert ValidatorInvalid();
         if (!validatorsOf[_poolAddress].add(_validator)) revert ValidatorDuplicated();
     }
 
@@ -121,6 +124,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         if (_srcValidator == _dstValidator) revert ValidatorDuplicated();
         if (_amount == 0) revert ZeroRedelegateAmount();
         if (!validatorsOf[_poolAddress].contains(_dstValidator)) {
+            if (IBnbStakePool(_poolAddress).isValidatorInvalid(_dstValidator)) revert ValidatorInvalid();
             validatorsOf[_poolAddress].add(_dstValidator);
         }
         IBnbStakePool(_poolAddress).redelegate{value: msg.value}(_srcValidator, _dstValidator, _amount);

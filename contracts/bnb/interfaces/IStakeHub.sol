@@ -13,6 +13,11 @@ interface IStakeHub {
 
     function getValidatorCreditContract(address operatorAddress) external view returns (address creditContract);
 
+    function getValidatorBasicInfo(address operatorAddress)
+        external
+        view
+        returns (uint256 createdTime, bool jailed, uint256 jailUntil);
+
     function minDelegationBNBChange() external view returns (uint256);
 
     function redelegateFeeRate() external view returns (uint256);
