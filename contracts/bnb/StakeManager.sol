@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IBnbStakePool.sol";
 import "../interfaces/ILsdToken.sol";
+import "./interfaces/IOldStakeManager.sol";
 import "../base/Manager.sol";
 
 contract StakeManager is Initializable, Manager, UUPSUpgradeable {
@@ -24,11 +25,17 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     error AlreadyWithdrawed();
     error EraNotMatch();
     error ValidatorInvalid();
+    error StakeSwitchClosed();
+    error AlreadyMigrated();
+    error PoolZeroBalance();
 
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.UintSet;
 
     mapping(address => EnumerableSet.AddressSet) validatorsOf;
+
+    bool public stakeSwitch;
+    uint256 public totalRTokenSupply;
 
     // events
     event Stake(address staker, address poolAddress, uint256 tokenAmount, uint256 lsdTokenAmount);
@@ -112,6 +119,38 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         if (!validatorsOf[_poolAddress].remove(_validator)) revert ValidatorNotExist();
     }
 
+    function stakeSwitchToggle() external onlyOwner {
+        stakeSwitch = !stakeSwitch;
+    }
+
+    function migrate(address _oldStakeManager, address _oldPoolAddress, address _newPoolAddress) external onlyOwner {
+        if (rate != EIGHTEEN_DECIMALS) revert AlreadyMigrated();
+        if (!bondedPools.contains(_newPoolAddress)) revert PoolNotExist(_newPoolAddress);
+        if (_newPoolAddress.balance == 0) revert PoolZeroBalance();
+
+        IOldStakeManager oldStakeManager = IOldStakeManager(_oldStakeManager);
+        rate = oldStakeManager.getRate();
+        eraOffset = oldStakeManager.eraOffset();
+        latestEra = oldStakeManager.latestEra();
+        totalRTokenSupply = oldStakeManager.totalRTokenSupply();
+        totalProtocolFee = oldStakeManager.totalProtocolFee();
+        _setEraRate(latestEra, rate);
+
+        // migrate active
+        OldPoolInfo memory oldPoolInfo = oldStakeManager.poolInfoOf(_oldPoolAddress);
+        if (oldPoolInfo.active == 0) {
+            revert PoolNotExist(_oldPoolAddress);
+        }
+        PoolInfo storage newPoolInfo = poolInfoOf[_newPoolAddress];
+        newPoolInfo.active = oldPoolInfo.active;
+
+        // delegate
+        IBnbStakePool stakePool = IBnbStakePool(_newPoolAddress);
+        address[] memory validators = getValidatorsOf(_newPoolAddress);
+
+        stakePool.delegateMulti(validators, _newPoolAddress.balance);
+    }
+
     // ------ delegation balancer
 
     function redelegate(
@@ -148,8 +187,8 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     }
 
     function stakeWithPool(address _poolAddress) public payable {
+        if (!stakeSwitch) revert StakeSwitchClosed();
         uint256 stakeAmount = msg.value;
-
         if (stakeAmount < minStakeAmount) revert NotEnoughStakeAmount();
         if (!bondedPools.contains(_poolAddress)) revert PoolNotExist(_poolAddress);
 
@@ -164,12 +203,14 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         if (!result) revert FailedToCall();
 
         // mint lsdToken
+        totalRTokenSupply += lsdTokenAmount;
         ILsdToken(lsdToken).mint(msg.sender, lsdTokenAmount);
 
         emit Stake(msg.sender, _poolAddress, stakeAmount, lsdTokenAmount);
     }
 
     function unstakeWithPool(address _poolAddress, uint256 _lsdTokenAmount) public {
+        if (!stakeSwitch) revert StakeSwitchClosed();
         if (_lsdTokenAmount == 0) revert ZeroUnstakeAmount();
         if (!bondedPools.contains(_poolAddress)) revert PoolNotExist(_poolAddress);
         if (unstakesOfUser[msg.sender].length() >= UNSTAKE_TIMES_LIMIT) revert UnstakeTimesExceedLimit();
@@ -182,6 +223,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         poolInfo.active -= tokenAmount;
 
         // burn lsdToken
+        totalRTokenSupply -= _lsdTokenAmount;
         ERC20Burnable(lsdToken).burnFrom(msg.sender, _lsdTokenAmount);
 
         // unstake info
@@ -229,6 +271,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     // ----- permissionless
 
     function newEra() external {
+        if (!stakeSwitch) revert StakeSwitchClosed();
         uint256 _era = latestEra + 1;
         if (currentEra() < _era) revert EraNotMatch();
 
@@ -280,10 +323,27 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         }
 
         // ditribute protocol fee
-        _distributeReward(totalNewReward, rate);
+        if (totalNewReward > 0) {
+            uint256 lsdTokenProtocolFee = (totalNewReward * protocolFeeCommission) / rate;
+
+            totalRTokenSupply += lsdTokenProtocolFee;
+
+            uint256 factoryFee = (lsdTokenProtocolFee * factoryFeeCommission) / 1e18;
+            lsdTokenProtocolFee = lsdTokenProtocolFee - factoryFee;
+
+            if (lsdTokenProtocolFee > 0) {
+                totalProtocolFee = totalProtocolFee + lsdTokenProtocolFee;
+                // mint lsdToken
+                ILsdToken(lsdToken).mint(address(this), lsdTokenProtocolFee);
+            }
+
+            if (factoryFee > 0) {
+                ILsdToken(lsdToken).mint(factoryAddress, factoryFee);
+            }
+        }
 
         // update rate
-        uint256 newRate = _calRate(newTotalActive, ERC20(lsdToken).totalSupply());
+        uint256 newRate = _calRate(newTotalActive, totalRTokenSupply);
         _setEraRate(_era, newRate);
 
         emit ExecuteNewEra(_era, newRate);
