@@ -10,6 +10,9 @@ contract LsdToken is ERC20Burnable, ILsdToken, IRateProvider {
     error AmountZero();
     error AlreadyInitialized();
     error CallerNotAllowed();
+    error AddressNotAllowed();
+
+    event MinterChanged(address oldMinter, address newMinter);
 
     address public minter;
 
@@ -42,5 +45,11 @@ contract LsdToken is ERC20Burnable, ILsdToken, IRateProvider {
         if (_amount == 0) revert AmountZero();
         // Update balance & supply
         _mint(_to, _amount);
+    }
+
+    function updateMinter(address _newMinter) external override onlyMinter {
+        if (_newMinter == address(0)) revert AddressNotAllowed();
+        emit MinterChanged(minter, _newMinter);
+        minter = _newMinter;
     }
 }
