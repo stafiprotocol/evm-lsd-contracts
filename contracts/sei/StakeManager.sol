@@ -24,6 +24,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     error UnstakeTimesExceedLimit();
     error AlreadyWithdrawed();
     error EraNotMatch();
+    error UnstakeNotOpen();
 
     using EnumerableSet for EnumerableSet.AddressSet;
     using EnumerableSet for EnumerableSet.UintSet;
@@ -32,6 +33,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     uint256 constant TWELVE_DECIMALS = 1e12;
 
     mapping(address => EnumerableStringSet.StringSet) validatorsOf;
+    bool public unstakeSwitch;
 
     // events
     event Stake(address staker, address poolAddress, uint256 tokenAmount, uint256 lsdTokenAmount);
@@ -113,6 +115,10 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         if (!validatorsOf[_poolAddress].remove(_validator)) revert ValidatorNotExist();
     }
 
+    function toggleUnstakeSwitch() external onlyOwner {
+        unstakeSwitch = !unstakeSwitch;
+    }
+
     // ------ delegation balancer
 
     function redelegate(
@@ -172,6 +178,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     }
 
     function unstakeWithPool(address _poolAddress, uint256 _lsdTokenAmount) public {
+        if (!unstakeSwitch) revert UnstakeNotOpen();
         if (_lsdTokenAmount == 0) revert ZeroUnstakeAmount();
         if (!bondedPools.contains(_poolAddress)) revert PoolNotExist(_poolAddress);
         if (unstakesOfUser[msg.sender].length() >= UNSTAKE_TIMES_LIMIT) revert UnstakeTimesExceedLimit();
