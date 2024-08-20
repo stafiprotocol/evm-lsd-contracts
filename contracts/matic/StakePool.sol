@@ -79,7 +79,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IMaticStakePool {
             address valAddress = govStakeManager.getValidatorContract(_validators[j]);
             uint256 reward = IValidatorShare(valAddress).getLiquidRewards(address(this));
             if (reward > 0) {
-                IValidatorShare(valAddress).buyVoucher(0, 0);
+                IValidatorShare(valAddress).buyVoucherPOL(0, 0);
                 poolNewReward = poolNewReward + reward;
             }
         }
@@ -91,12 +91,12 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IMaticStakePool {
         uint256 _amount
     ) external override onlyStakeManager returns (uint256 amountToDeposit) {
         address valAddress = IGovStakeManager(govStakeManagerAddress).getValidatorContract(_validator);
-        return IValidatorShare(valAddress).buyVoucher(_amount, 0);
+        return IValidatorShare(valAddress).buyVoucherPOL(_amount, 0);
     }
 
     function undelegate(uint256 _validator, uint256 _claimAmount) external override onlyStakeManager {
         address valAddress = IGovStakeManager(govStakeManagerAddress).getValidatorContract(_validator);
-        IValidatorShare(valAddress).sellVoucher_new(_claimAmount, _claimAmount);
+        IValidatorShare(valAddress).sellVoucher_newPOL(_claimAmount, _claimAmount);
     }
 
     function unstakeClaimTokens(

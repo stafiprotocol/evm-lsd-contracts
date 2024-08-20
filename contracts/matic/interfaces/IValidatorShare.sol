@@ -9,9 +9,9 @@ interface IValidatorShare {
 
     function withdrawRewards() external;
 
-    function buyVoucher(uint256 _amount, uint256 _minSharesToMint) external returns (uint256 amountToDeposit);
+    function buyVoucherPOL(uint256 _amount, uint256 _minSharesToMint) external returns (uint256 amountToDeposit);
 
-    function sellVoucher_new(uint256 claimAmount, uint256 maximumSharesToBurn) external;
+    function sellVoucher_newPOL(uint256 claimAmount, uint256 maximumSharesToBurn) external;
 
     function unstakeClaimTokens_new(uint256 unbondNonce) external;
 
