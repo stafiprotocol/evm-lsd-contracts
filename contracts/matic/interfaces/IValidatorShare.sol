@@ -13,7 +13,7 @@ interface IValidatorShare {
 
     function sellVoucher_newPOL(uint256 claimAmount, uint256 maximumSharesToBurn) external;
 
-    function unstakeClaimTokens_new(uint256 unbondNonce) external;
+    function unstakeClaimTokens_newPOL(uint256 unbondNonce) external;
 
     function restake() external returns (uint256, uint256);
 

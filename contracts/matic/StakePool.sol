@@ -124,7 +124,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IMaticStakePool {
             return _claimedNonce;
         }
 
-        IValidatorShare(valAddress).unstakeClaimTokens_new(willClaimedNonce);
+        IValidatorShare(valAddress).unstakeClaimTokens_newPOL(willClaimedNonce);
 
         return willClaimedNonce;
     }
