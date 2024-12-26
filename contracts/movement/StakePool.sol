@@ -6,9 +6,10 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/IStakePool.sol";
 import "./interfaces/IMovementStaking.sol";
+import "./interfaces/IMCR.sol";
 import "../base/Ownable.sol";
 
-contract StakePool is Initializable, UUPSUpgradeable, Ownable, IStakePool {
+contract StakePool is Initializable, UUPSUpgradeable, Ownable, IStakePool, IMCR {
     // Custom errors to provide more descriptive revert messages.
     error FailedToWithdrawForStaker();
 
@@ -124,5 +125,13 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IStakePool {
 
     function approveForStakeManager(uint256 amount) external override onlyStakeManager {
         IERC20(stakeTokenAddress).safeIncreaseAllowance(movementStakingAddress, amount);
+    }
+
+    function submitBlockCommitment(BlockCommitment memory blockCommitment) external override {
+        IMCR(movementMCRAddress).submitBlockCommitment(blockCommitment);
+    }
+
+    function submitBatchBlockCommitment(BlockCommitment[] memory blockCommitments) external override {
+        IMCR(movementMCRAddress).submitBatchBlockCommitment(blockCommitments);
     }
 }

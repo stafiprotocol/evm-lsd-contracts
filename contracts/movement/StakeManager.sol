@@ -212,8 +212,6 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
                 IStakePool(poolAddress).unstake(needUndelegate);
 
                 emit Undelegate(poolAddress, needUndelegate);
-
-                if (needUndelegate != 0) revert NotEnoughAmountToUndelegate();
             }
 
             // cal total active
