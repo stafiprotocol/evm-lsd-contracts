@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.19;
 
-// import "./StakePool.sol";
-// import "./StakeManager.sol";
 import "../LsdToken.sol";
 import "../Timelock.sol";
+import "./StakeManager.sol";
+import "./StakePool.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./interfaces/ILsdNetworkFactory.sol";
-import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory {
     using SafeERC20 for IERC20;
@@ -123,39 +122,41 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
         networkContractsOfLsdToken[contracts._lsdToken] = contracts;
         lsdTokensOf[msg.sender].push(contracts._lsdToken);
 
-        // (bool success, bytes memory data) = contracts._stakePool.call(
-        //     abi.encodeWithSelector(
-        //         StakePool.initialize.selector,
-        //         contracts._stakeManager,
-        //         govStakeManagerAddress,
-        //         _networkAdmin
-        //     )
-        // );
-        // if (!success) {
-        //     revert FailedToCall();
-        // }
+        (bool success, bytes memory data) = contracts._stakePool.call(
+            abi.encodeWithSelector(
+                StakePool.initialize.selector,
+                contracts._stakeManager,
+                movementStakingAddress,
+                movementMCRAddress,
+                _networkAdmin,
+                _attester,
+                contracts._lsdToken
+            )
+        );
+        if (!success) {
+            revert FailedToCall();
+        }
 
-        // (success, data) = contracts._stakeManager.call(
-        //     abi.encodeWithSelector(
-        //         StakeManager.initialize.selector,
-        //         contracts._lsdToken,
-        //         stakeTokenAddress,
-        //         contracts._stakePool,
-        //         _validatorId,
-        //         _networkAdmin,
-        //         this
-        //     )
-        // );
-        // if (!success) {
-        //     revert FailedToCall();
-        // }
+        (success, data) = contracts._stakeManager.call(
+            abi.encodeWithSelector(
+                StakeManager.initialize.selector,
+                contracts._lsdToken,
+                stakeTokenAddress,
+                contracts._stakePool,
+                _networkAdmin,
+                address(this)
+            )
+        );
+        if (!success) {
+            revert FailedToCall();
+        }
 
-        // (success, data) = contracts._lsdToken.call(
-        //     abi.encodeWithSelector(ILsdToken.initMinter.selector, contracts._stakeManager)
-        // );
-        // if (!success) {
-        //     revert FailedToCall();
-        // }
+        (success, data) = contracts._lsdToken.call(
+            abi.encodeWithSelector(ILsdToken.initMinter.selector, contracts._stakeManager)
+        );
+        if (!success) {
+            revert FailedToCall();
+        }
 
         emit LsdNetwork(contracts);
     }

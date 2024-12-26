@@ -40,7 +40,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     );
     event Withdraw(address staker, address poolAddress, uint256 tokenAmount, int256[] unstakeIndexList);
     event ExecuteNewEra(uint256 indexed era, uint256 rate);
-    event Delegate(address pool,  uint256 amount);
+    event Delegate(address pool, uint256 amount);
     event Undelegate(address pool, uint256 amount);
     event NewReward(address pool, uint256 amount);
 
@@ -63,7 +63,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
 
         stakeTokenAddress = _stakeTokenAddress;
 
-        IStakePool(_poolAddress).approveForStakeManager(stakeTokenAddress, 1e28);
+        IStakePool(_poolAddress).approveForStakeManager(1e28);
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
@@ -84,7 +84,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     }
 
     function approve(address _poolAddress, uint256 _amount) external onlyOwner {
-        IStakePool(_poolAddress).approveForStakeManager(stakeTokenAddress, _amount);
+        IStakePool(_poolAddress).approveForStakeManager(_amount);
     }
 
     // ----- staker operation
@@ -173,7 +173,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         }
 
         if (totalWithdrawAmount <= 0) revert ZeroWithdrawAmount();
-        IStakePool(_poolAddress).withdrawForStaker(stakeTokenAddress, msg.sender, totalWithdrawAmount);
+        IStakePool(_poolAddress).withdrawForStaker(msg.sender, totalWithdrawAmount);
 
         emit Withdraw(msg.sender, _poolAddress, totalWithdrawAmount, emitUnstakeIndexList);
     }
@@ -193,13 +193,13 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         for (uint256 i = 0; i < poolList.length; ++i) {
             address poolAddress = poolList[i];
 
+            PoolInfo memory poolInfo = poolInfoOf[poolAddress];
             // newReward
-            uint256 poolNewReward = IStakePool(poolAddress).getReward();
+            uint256 poolNewReward = IStakePool(poolAddress).getReward(poolInfo.bond);
             emit NewReward(poolAddress, poolNewReward);
             totalNewReward = totalNewReward + poolNewReward;
 
             // bond or unbond
-            PoolInfo memory poolInfo = poolInfoOf[poolAddress];
             uint256 poolBondAndNewReward = poolInfo.bond + poolNewReward;
             if (poolBondAndNewReward > poolInfo.unbond) {
                 uint256 needDelegate = poolBondAndNewReward - poolInfo.unbond;
