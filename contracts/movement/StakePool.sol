@@ -28,6 +28,11 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IStakePool, IMCR 
         _;
     }
 
+    modifier onlyAttester() {
+        if (attester != msg.sender) revert CallerNotAllowed();
+        _;
+    }
+
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
@@ -127,11 +132,11 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IStakePool, IMCR 
         IERC20(stakeTokenAddress).safeIncreaseAllowance(movementStakingAddress, amount);
     }
 
-    function submitBlockCommitment(BlockCommitment memory blockCommitment) external override {
+    function submitBlockCommitment(BlockCommitment memory blockCommitment) external override onlyAttester {
         IMCR(movementMCRAddress).submitBlockCommitment(blockCommitment);
     }
 
-    function submitBatchBlockCommitment(BlockCommitment[] memory blockCommitments) external override {
+    function submitBatchBlockCommitment(BlockCommitment[] memory blockCommitments) external override onlyAttester {
         IMCR(movementMCRAddress).submitBatchBlockCommitment(blockCommitments);
     }
 }
