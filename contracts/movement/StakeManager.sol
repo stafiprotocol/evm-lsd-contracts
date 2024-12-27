@@ -59,7 +59,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         if (_stakeTokenAddress == address(0)) revert ZeroStakeTokenAddress();
 
         _transferOwnership(_owner);
-        _initManagerParams(_lsdToken, _poolAddress, _factoryAddress, 4, 0);
+        _initManagerParams(_lsdToken, _poolAddress, _factoryAddress, 4, 0); // todo, update default duration
 
         stakeTokenAddress = _stakeTokenAddress;
 

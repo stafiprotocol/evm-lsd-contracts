@@ -130,7 +130,7 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
                 movementMCRAddress,
                 _networkAdmin,
                 _attester,
-                contracts._lsdToken
+                stakeTokenAddress
             )
         );
         if (!success) {
