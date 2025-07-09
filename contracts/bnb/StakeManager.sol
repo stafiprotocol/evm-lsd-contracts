@@ -33,11 +33,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     // events
     event Stake(address staker, address poolAddress, uint256 tokenAmount, uint256 lsdTokenAmount);
     event Unstake(
-        address staker,
-        address poolAddress,
-        uint256 tokenAmount,
-        uint256 lsdTokenAmount,
-        uint256 unstakeIndex
+        address staker, address poolAddress, uint256 tokenAmount, uint256 lsdTokenAmount, uint256 unstakeIndex
     );
     event Withdraw(address staker, address poolAddress, uint256 tokenAmount, int256[] unstakeIndexList);
     event ExecuteNewEra(uint256 indexed era, uint256 rate);
@@ -114,12 +110,11 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
 
     // ------ delegation balancer
 
-    function redelegate(
-        address _poolAddress,
-        address _srcValidator,
-        address _dstValidator,
-        uint256 _amount
-    ) external payable onlyDelegationBalancer {
+    function redelegate(address _poolAddress, address _srcValidator, address _dstValidator, uint256 _amount)
+        external
+        payable
+        onlyDelegationBalancer
+    {
         if (!validatorsOf[_poolAddress].contains(_srcValidator)) revert ValidatorNotExist();
         if (_srcValidator == _dstValidator) revert ValidatorDuplicated();
         if (_amount == 0) revert ZeroRedelegateAmount();
@@ -160,7 +155,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         poolInfo.bond = poolInfo.bond + stakeAmount;
         poolInfo.active = poolInfo.active + stakeAmount;
 
-        (bool result, ) = _poolAddress.call{value: stakeAmount}("");
+        (bool result,) = _poolAddress.call{value: stakeAmount}("");
         if (!result) revert FailedToCall();
 
         // mint lsdToken
@@ -188,12 +183,8 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         uint256 willUseUnstakeIndex = nextUnstakeIndex;
         nextUnstakeIndex = willUseUnstakeIndex + 1;
 
-        unstakeAtIndex[willUseUnstakeIndex] = UnstakeInfo({
-            era: currentEra(),
-            pool: _poolAddress,
-            receiver: msg.sender,
-            amount: tokenAmount
-        });
+        unstakeAtIndex[willUseUnstakeIndex] =
+            UnstakeInfo({era: currentEra(), pool: _poolAddress, receiver: msg.sender, amount: tokenAmount});
         unstakesOfUser[msg.sender].add(willUseUnstakeIndex);
 
         emit Unstake(msg.sender, _poolAddress, tokenAmount, _lsdTokenAmount, willUseUnstakeIndex);

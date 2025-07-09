@@ -13,11 +13,8 @@ interface ILsdNetworkFactory is Errors {
 
     event LsdNetwork(NetworkContracts contracts);
 
-    function createLsdNetwork(
-        string memory _lsdTokenName,
-        string memory _lsdTokenSymbol,
-        uint256 _validatorId
-    ) external;
+    function createLsdNetwork(string memory _lsdTokenName, string memory _lsdTokenSymbol, uint256 _validatorId)
+        external;
 
     function createLsdNetworkWithTimelock(
         string memory _lsdTokenName,

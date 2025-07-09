@@ -26,8 +26,9 @@ abstract contract Protocol is Ownable {
     }
 
     function setProtocolFeeCommission(uint256 _protocolFeeCommission) external virtual onlyOwner {
-        if (_protocolFeeCommission > MAX_PROTOCOL_FEE_COMMISSION)
+        if (_protocolFeeCommission > MAX_PROTOCOL_FEE_COMMISSION) {
             revert GreaterThanMaxProtocolFeeCommission(_protocolFeeCommission);
+        }
 
         protocolFeeCommission = _protocolFeeCommission;
     }

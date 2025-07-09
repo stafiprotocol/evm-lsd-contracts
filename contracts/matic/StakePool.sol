@@ -28,11 +28,10 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IMaticStakePool {
         _disableInitializers();
     }
 
-    function initialize(
-        address _stakeManagerAddress,
-        address _govStakeManagerAddress,
-        address _owner
-    ) external initializer {
+    function initialize(address _stakeManagerAddress, address _govStakeManagerAddress, address _owner)
+        external
+        initializer
+    {
         if (_stakeManagerAddress == address(0) || _govStakeManagerAddress == address(0) || _owner == address(0)) {
             revert AddressNotAllowed();
         }
@@ -53,7 +52,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IMaticStakePool {
 
     function getDelegated(uint256 _validator) external view override returns (uint256) {
         address valAddress = IGovStakeManager(govStakeManagerAddress).getValidatorContract(_validator);
-        (uint256 totalStake, ) = IValidatorShare(valAddress).getTotalStake(address(this));
+        (uint256 totalStake,) = IValidatorShare(valAddress).getTotalStake(address(this));
         return totalStake;
     }
 
@@ -62,7 +61,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IMaticStakePool {
         IGovStakeManager govStakeManager = IGovStakeManager(govStakeManagerAddress);
         for (uint256 j = 0; j < _validators.length; ++j) {
             address valAddress = govStakeManager.getValidatorContract(_validators[j]);
-            (uint256 stake, ) = IValidatorShare(valAddress).getTotalStake(address(this));
+            (uint256 stake,) = IValidatorShare(valAddress).getTotalStake(address(this));
             totalStake = totalStake + stake;
         }
         return totalStake;
@@ -70,9 +69,12 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IMaticStakePool {
 
     // ------------ stakeManager ------------
 
-    function checkAndWithdrawRewards(
-        uint256[] calldata _validators
-    ) external override onlyStakeManager returns (uint256) {
+    function checkAndWithdrawRewards(uint256[] calldata _validators)
+        external
+        override
+        onlyStakeManager
+        returns (uint256)
+    {
         uint256 poolNewReward;
         IGovStakeManager govStakeManager = IGovStakeManager(govStakeManagerAddress);
         for (uint256 j = 0; j < _validators.length; ++j) {
@@ -86,10 +88,12 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IMaticStakePool {
         return poolNewReward;
     }
 
-    function delegate(
-        uint256 _validator,
-        uint256 _amount
-    ) external override onlyStakeManager returns (uint256 amountToDeposit) {
+    function delegate(uint256 _validator, uint256 _amount)
+        external
+        override
+        onlyStakeManager
+        returns (uint256 amountToDeposit)
+    {
         address valAddress = IGovStakeManager(govStakeManagerAddress).getValidatorContract(_validator);
         return IValidatorShare(valAddress).buyVoucherPOL(_amount, 0);
     }
@@ -99,17 +103,17 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IMaticStakePool {
         IValidatorShare(valAddress).sellVoucher_newPOL(_claimAmount, _claimAmount);
     }
 
-    function unstakeClaimTokens(
-        uint256 _validator,
-        uint256 _claimedNonce
-    ) external override onlyStakeManager returns (uint256) {
+    function unstakeClaimTokens(uint256 _validator, uint256 _claimedNonce)
+        external
+        override
+        onlyStakeManager
+        returns (uint256)
+    {
         IGovStakeManager govStakeManager = IGovStakeManager(govStakeManagerAddress);
         address valAddress = govStakeManager.getValidatorContract(_validator);
         uint256 willClaimedNonce = _claimedNonce + 1;
-        IValidatorShare.DelegatorUnbond memory unbond = IValidatorShare(valAddress).unbonds_new(
-            address(this),
-            willClaimedNonce
-        );
+        IValidatorShare.DelegatorUnbond memory unbond =
+            IValidatorShare(valAddress).unbonds_new(address(this), willClaimedNonce);
 
         if (unbond.withdrawEpoch == 0) {
             return _claimedNonce;
@@ -129,21 +133,21 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IMaticStakePool {
         return willClaimedNonce;
     }
 
-    function withdrawForStaker(
-        address _erc20TokenAddress,
-        address _staker,
-        uint256 _amount
-    ) external override onlyStakeManager {
+    function withdrawForStaker(address _erc20TokenAddress, address _staker, uint256 _amount)
+        external
+        override
+        onlyStakeManager
+    {
         if (_amount > 0) {
             IERC20(_erc20TokenAddress).safeTransfer(_staker, _amount);
         }
     }
 
-    function redelegate(
-        uint256 _fromValidatorId,
-        uint256 _toValidatorId,
-        uint256 _amount
-    ) external override onlyStakeManager {
+    function redelegate(uint256 _fromValidatorId, uint256 _toValidatorId, uint256 _amount)
+        external
+        override
+        onlyStakeManager
+    {
         IGovStakeManager(govStakeManagerAddress).migrateDelegation(_fromValidatorId, _toValidatorId, _amount);
     }
 

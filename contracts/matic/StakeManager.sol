@@ -40,11 +40,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     // events
     event Stake(address staker, address poolAddress, uint256 tokenAmount, uint256 lsdTokenAmount);
     event Unstake(
-        address staker,
-        address poolAddress,
-        uint256 tokenAmount,
-        uint256 lsdTokenAmount,
-        uint256 unstakeIndex
+        address staker, address poolAddress, uint256 tokenAmount, uint256 lsdTokenAmount, uint256 unstakeIndex
     );
     event Withdraw(address staker, address poolAddress, uint256 tokenAmount, int256[] unstakeIndexList);
     event ExecuteNewEra(uint256 indexed era, uint256 rate);
@@ -125,12 +121,10 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
 
     // ------ delegation balancer
 
-    function redelegate(
-        address _poolAddress,
-        uint256 _srcValidatorId,
-        uint256 _dstValidatorId,
-        uint256 _amount
-    ) external onlyDelegationBalancer {
+    function redelegate(address _poolAddress, uint256 _srcValidatorId, uint256 _dstValidatorId, uint256 _amount)
+        external
+        onlyDelegationBalancer
+    {
         if (!validatorIdsOf[_poolAddress].contains(_srcValidatorId)) revert ValidatorNotExist();
         if (_srcValidatorId == _dstValidatorId) revert ValidatorDuplicated();
         if (_amount == 0) revert ZeroRedelegateAmount();
@@ -199,12 +193,8 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         uint256 willUseUnstakeIndex = nextUnstakeIndex;
         nextUnstakeIndex = willUseUnstakeIndex + 1;
 
-        unstakeAtIndex[willUseUnstakeIndex] = UnstakeInfo({
-            era: currentEra(),
-            pool: _poolAddress,
-            receiver: msg.sender,
-            amount: tokenAmount
-        });
+        unstakeAtIndex[willUseUnstakeIndex] =
+            UnstakeInfo({era: currentEra(), pool: _poolAddress, receiver: msg.sender, amount: tokenAmount});
         unstakesOfUser[msg.sender].add(willUseUnstakeIndex);
 
         emit Unstake(msg.sender, _poolAddress, tokenAmount, _lsdTokenAmount, willUseUnstakeIndex);
@@ -262,10 +252,8 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
             // unstakeClaimTokens
             for (uint256 j = 0; j < validators.length; ++j) {
                 uint256 oldClaimedNonce = maxClaimedNonceOf[poolAddress][validators[j]];
-                uint256 newClaimedNonce = IMaticStakePool(poolAddress).unstakeClaimTokens(
-                    validators[j],
-                    oldClaimedNonce
-                );
+                uint256 newClaimedNonce =
+                    IMaticStakePool(poolAddress).unstakeClaimTokens(validators[j], oldClaimedNonce);
                 if (newClaimedNonce > oldClaimedNonce) {
                     maxClaimedNonceOf[poolAddress][validators[j]] = newClaimedNonce;
 

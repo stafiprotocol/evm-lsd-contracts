@@ -90,11 +90,10 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
 
     // ------------ user ------------
 
-    function createLsdNetwork(
-        string memory _lsdTokenName,
-        string memory _lsdTokenSymbol,
-        address _attester
-    ) external override {
+    function createLsdNetwork(string memory _lsdTokenName, string memory _lsdTokenSymbol, address _attester)
+        external
+        override
+    {
         _createLsdNetwork(_lsdTokenName, _lsdTokenSymbol, _attester, msg.sender);
     }
 
@@ -151,9 +150,8 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
             revert FailedToCall();
         }
 
-        (success, data) = contracts._lsdToken.call(
-            abi.encodeWithSelector(ILsdToken.initMinter.selector, contracts._stakeManager)
-        );
+        (success, data) =
+            contracts._lsdToken.call(abi.encodeWithSelector(ILsdToken.initMinter.selector, contracts._stakeManager));
         if (!success) {
             revert FailedToCall();
         }
@@ -165,10 +163,10 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
         return address(new ERC1967Proxy(_logicAddress, ""));
     }
 
-    function deployNetworkContracts(
-        string memory _lsdTokenName,
-        string memory _lsdTokenSymbol
-    ) private returns (NetworkContracts memory) {
+    function deployNetworkContracts(string memory _lsdTokenName, string memory _lsdTokenSymbol)
+        private
+        returns (NetworkContracts memory)
+    {
         address stakeManager = deploy(stakeManagerLogicAddress);
         address stakePool = deploy(stakePoolLogicAddress);
 

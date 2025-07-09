@@ -47,12 +47,9 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IStakePool, IMCR 
         address _stakeTokenAddress
     ) external initializer {
         if (
-            _stakeManagerAddress == address(0) ||
-            _movementStakingAddress == address(0) ||
-            _movementMCRAddress == address(0) ||
-            _owner == address(0) ||
-            _attester == address(0) ||
-            _stakeTokenAddress == address(0)
+            _stakeManagerAddress == address(0) || _movementStakingAddress == address(0)
+                || _movementMCRAddress == address(0) || _owner == address(0) || _attester == address(0)
+                || _stakeTokenAddress == address(0)
         ) {
             revert AddressNotAllowed();
         }
@@ -80,12 +77,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IStakePool, IMCR 
         uint256 minEpoch = movementStaking.getCurrentEpoch(movementMCRAddress);
         uint256 totalStakeAmount;
         for (uint256 i = minEpoch; i <= maxEpoch; i++) {
-            totalStakeAmount += movementStaking.getStakeAtEpoch(
-                movementMCRAddress,
-                i,
-                stakeTokenAddress,
-                address(this)
-            );
+            totalStakeAmount += movementStaking.getStakeAtEpoch(movementMCRAddress, i, stakeTokenAddress, address(this));
         }
         return totalStakeAmount;
     }
@@ -99,12 +91,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IStakePool, IMCR 
         uint256 minEpoch = movementStaking.getCurrentEpoch(movementMCRAddress);
         uint256 pendingUnstake;
         for (uint256 i = minEpoch + 1; i <= maxEpoch; i++) {
-            pendingUnstake += movementStaking.getUnstakeAtEpoch(
-                movementMCRAddress,
-                i,
-                stakeTokenAddress,
-                address(this)
-            );
+            pendingUnstake += movementStaking.getUnstakeAtEpoch(movementMCRAddress, i, stakeTokenAddress, address(this));
         }
 
         return poolBalance - _bond - (totalUnstakeButNotWithdrawAmount - pendingUnstake);

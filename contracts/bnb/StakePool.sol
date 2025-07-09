@@ -69,7 +69,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
     }
 
     function isInvalidValidator(address _validator) external view returns (bool) {
-        (uint256 createdTime, bool jailed, ) = stakeHub.getValidatorBasicInfo(_validator);
+        (uint256 createdTime, bool jailed,) = stakeHub.getValidatorBasicInfo(_validator);
         if (createdTime == 0 || jailed) {
             return true;
         }
@@ -153,11 +153,12 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
         }
     }
 
-    function redelegate(
-        address _validatorSrc,
-        address _validatorDst,
-        uint256 _amount
-    ) external payable override onlyStakeManager {
+    function redelegate(address _validatorSrc, address _validatorDst, uint256 _amount)
+        external
+        payable
+        override
+        onlyStakeManager
+    {
         uint256 redelegateFee = (_amount * stakeHub.redelegateFeeRate()) / stakeHub.REDELEGATE_FEE_RATE_BASE();
         if (msg.value < redelegateFee) revert NotEnoughRedelegateFee();
         _govRedelegate(_validatorSrc, _validatorDst, _amount, msg.value);
@@ -172,7 +173,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
     function withdrawForStaker(address _staker, uint256 _amount) external override onlyStakeManager {
         if (_staker == address(0)) revert AddressNotAllowed();
         if (_amount > 0) {
-            (bool result, ) = _staker.call{value: _amount}("");
+            (bool result,) = _staker.call{value: _amount}("");
             if (!result) revert FailedToWithdrawForStaker();
 
             emit WithdrawForStaker(_staker, _amount);

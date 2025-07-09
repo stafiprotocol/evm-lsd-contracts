@@ -28,9 +28,6 @@ interface ILsdNetworkFactory is Errors {
         address[] memory proposers
     ) external;
 
-    function createLsdNetworkWithLsdToken(
-        address _lsdToken,
-        address[] memory _validators,
-        address _networkAdmin
-    ) external;
+    function createLsdNetworkWithLsdToken(address _lsdToken, address[] memory _validators, address _networkAdmin)
+        external;
 }

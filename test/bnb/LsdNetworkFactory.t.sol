@@ -53,7 +53,7 @@ contract FactoryTest is Test {
 
         address lsdTokenAddr = factory.lsdTokensOfCreater(address(this))[0];
         LsdToken lsdToken = LsdToken(lsdTokenAddr);
-        (address stakeManagerAddr, address stakePoolAddr, , ) = factory.networkContractsOfLsdToken(lsdTokenAddr);
+        (address stakeManagerAddr, address stakePoolAddr,,) = factory.networkContractsOfLsdToken(lsdTokenAddr);
 
         console.log("stakeManger %s", stakeManagerAddr);
         console.log("stakePool %s", stakePoolAddr);

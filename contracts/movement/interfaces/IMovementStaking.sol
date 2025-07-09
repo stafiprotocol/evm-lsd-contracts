@@ -12,27 +12,25 @@ interface IMovementStaking {
 
     function getNextEpochByBlockTime(address) external view returns (uint256);
 
-    function getStakeAtEpoch(
-        address domain,
-        uint256 epoch,
-        address custodian,
-        address attester
-    ) external view returns (uint256);
+    function getStakeAtEpoch(address domain, uint256 epoch, address custodian, address attester)
+        external
+        view
+        returns (uint256);
 
-    function getCurrentEpochStake(address domain, address custodian, address attester) external view returns (uint256);
+    function getCurrentEpochStake(address domain, address custodian, address attester)
+        external
+        view
+        returns (uint256);
 
-    function getUnstakeAtEpoch(
-        address domain,
-        uint256 epoch,
-        address custodian,
-        address attester
-    ) external view returns (uint256);
+    function getUnstakeAtEpoch(address domain, uint256 epoch, address custodian, address attester)
+        external
+        view
+        returns (uint256);
 
-    function getCurrentEpochUnstake(
-        address domain,
-        address custodian,
-        address attester
-    ) external view returns (uint256);
+    function getCurrentEpochUnstake(address domain, address custodian, address attester)
+        external
+        view
+        returns (uint256);
 
     function stake(address domain, IERC20 custodian, uint256 amount) external;
 

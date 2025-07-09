@@ -14,23 +14,23 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 contract MockSeiGov is IGovDistribution, IGovStaking {
     receive() external payable {}
 
-    function withdrawDelegationRewards(string memory validator) external returns (bool success) {
+    function withdrawDelegationRewards(string memory /* _validator */ ) external pure returns (bool success) {
         return true;
     }
 
-    function delegate(string memory valAddress) external payable returns (bool success) {
+    function delegate(string memory /* _valAddress */ ) external payable returns (bool success) {
         return true;
     }
 
-    function redelegate(
-        string memory srcAddress,
-        string memory dstAddress,
-        uint256 amount
-    ) external returns (bool success) {
+    function redelegate(string memory, /* _srcAddress */ string memory, /* _dstAddress */ uint256 /* _amount */ )
+        external
+        pure
+        returns (bool success)
+    {
         return true;
     }
 
-    function undelegate(string memory valAddress, uint256 amount) external returns (bool success) {
+    function undelegate(string memory, /* _valAddress */ uint256 /* _amount */ ) external pure returns (bool success) {
         return true;
     }
 }
@@ -46,7 +46,8 @@ contract MockStakePool is StakePool {
 
     function _govDelegate(string memory validator, uint256 amount) internal override {
         govStaking.delegate{value: amount}(validator);
-        address(govStaking).call{value: amount * 1e12}("");
+        (bool result,) = address(govStaking).call{value: amount * 1e12}("");
+        if (!result) revert();
     }
 
     function _govUndelegate(string memory validator, uint256 amount) internal override {
@@ -99,7 +100,7 @@ contract FactoryTest is Test {
         factory.createLsdNetwork("name", "symbol", vals, networkAdmin);
 
         address lsdToken = factory.lsdTokensOfCreater(address(this))[0];
-        (address stakeManagerAddr, address stakePoolAddr, , ) = factory.networkContractsOfLsdToken(lsdToken);
+        (address stakeManagerAddr, address stakePoolAddr,,) = factory.networkContractsOfLsdToken(lsdToken);
 
         console.log("stakeManger %s", stakeManagerAddr);
         console.log("stakePool %s", stakePoolAddr);

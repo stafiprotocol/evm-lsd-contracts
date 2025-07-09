@@ -32,11 +32,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     // events
     event Stake(address staker, address poolAddress, uint256 tokenAmount, uint256 lsdTokenAmount);
     event Unstake(
-        address staker,
-        address poolAddress,
-        uint256 tokenAmount,
-        uint256 lsdTokenAmount,
-        uint256 unstakeIndex
+        address staker, address poolAddress, uint256 tokenAmount, uint256 lsdTokenAmount, uint256 unstakeIndex
     );
     event Withdraw(address staker, address poolAddress, uint256 tokenAmount, int256[] unstakeIndexList);
     event ExecuteNewEra(uint256 indexed era, uint256 rate);
@@ -140,12 +136,8 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         uint256 willUseUnstakeIndex = nextUnstakeIndex;
         nextUnstakeIndex = willUseUnstakeIndex + 1;
 
-        unstakeAtIndex[willUseUnstakeIndex] = UnstakeInfo({
-            era: currentEra(),
-            pool: _poolAddress,
-            receiver: msg.sender,
-            amount: tokenAmount
-        });
+        unstakeAtIndex[willUseUnstakeIndex] =
+            UnstakeInfo({era: currentEra(), pool: _poolAddress, receiver: msg.sender, amount: tokenAmount});
         unstakesOfUser[msg.sender].add(willUseUnstakeIndex);
 
         emit Unstake(msg.sender, _poolAddress, tokenAmount, _lsdTokenAmount, willUseUnstakeIndex);

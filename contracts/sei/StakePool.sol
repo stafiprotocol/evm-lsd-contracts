@@ -160,11 +160,11 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
         }
     }
 
-    function redelegate(
-        string memory _validatorSrc,
-        string memory _validatorDst,
-        uint256 _amount
-    ) external override onlyStakeManager {
+    function redelegate(string memory _validatorSrc, string memory _validatorDst, uint256 _amount)
+        external
+        override
+        onlyStakeManager
+    {
         uint256 willRedelegateAmount = _amount / TWELVE_DECIMALS;
 
         _govRedelegate(_validatorSrc, _validatorDst, willRedelegateAmount);
@@ -177,9 +177,12 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
         emit Redelegate(_validatorSrc, _validatorDst, changedAmount);
     }
 
-    function withdrawDelegationRewardsMulti(
-        string[] memory _validators
-    ) external override onlyStakeManager returns (uint256) {
+    function withdrawDelegationRewardsMulti(string[] memory _validators)
+        external
+        override
+        onlyStakeManager
+        returns (uint256)
+    {
         uint256 preBalance = address(this).balance;
         for (uint256 i = 0; i < _validators.length; ++i) {
             if (delegatedAmountOfValidator[_validators[i]] == 0) {
@@ -200,7 +203,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
             revert AddressNotAllowed();
         }
         if (_amount > 0) {
-            (bool result, ) = _staker.call{value: _amount}("");
+            (bool result,) = _staker.call{value: _amount}("");
             if (!result) revert FailedToWithdrawForStaker();
         }
     }

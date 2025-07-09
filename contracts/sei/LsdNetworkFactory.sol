@@ -38,11 +38,10 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
         _disableInitializers();
     }
 
-    function initialize(
-        address _factoryAdmin,
-        address _stakeManagerLogicAddress,
-        address _stakePoolLogicAddress
-    ) external initializer {
+    function initialize(address _factoryAdmin, address _stakeManagerLogicAddress, address _stakePoolLogicAddress)
+        external
+        initializer
+    {
         if (_factoryAdmin == address(0)) {
             revert AddressNotAllowed();
         }
@@ -125,11 +124,10 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
         _createLsdNetwork(address(0), _lsdTokenName, _lsdTokenSymbol, _validators, networkAdmin);
     }
 
-    function createLsdNetworkWithLsdToken(
-        address _lsdToken,
-        string[] memory _validators,
-        address _networkAdmin
-    ) external override {
+    function createLsdNetworkWithLsdToken(address _lsdToken, string[] memory _validators, address _networkAdmin)
+        external
+        override
+    {
         if (!authorizedLsdToken[_lsdToken]) {
             revert NotAuthorizedLsdToken();
         }
@@ -171,9 +169,8 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
             revert FailedToCall();
         }
 
-        (success, data) = contracts._lsdToken.call(
-            abi.encodeWithSelector(ILsdToken.initMinter.selector, contracts._stakeManager)
-        );
+        (success, data) =
+            contracts._lsdToken.call(abi.encodeWithSelector(ILsdToken.initMinter.selector, contracts._stakeManager));
         if (!success) {
             revert FailedToCall();
         }
@@ -185,11 +182,10 @@ contract LsdNetworkFactory is Initializable, UUPSUpgradeable, ILsdNetworkFactory
         return address(new ERC1967Proxy(_logicAddress, ""));
     }
 
-    function deployNetworkContracts(
-        address _lsdToken,
-        string memory _lsdTokenName,
-        string memory _lsdTokenSymbol
-    ) private returns (NetworkContracts memory) {
+    function deployNetworkContracts(address _lsdToken, string memory _lsdTokenName, string memory _lsdTokenSymbol)
+        private
+        returns (NetworkContracts memory)
+    {
         address stakeManager = deploy(stakeManagerLogicAddress);
         address stakePool = deploy(stakePoolLogicAddress);
 
