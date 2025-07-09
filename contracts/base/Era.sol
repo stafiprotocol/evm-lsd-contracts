@@ -11,6 +11,7 @@ abstract contract Era is Ownable {
 
     uint256 public constant MIN_ERA_SECONDS = 3600;
     uint256 public constant MAX_ERA_SECONDS = 172800;
+    uint256 public constant DEFAULT_ERA_SECONDS = 86400;
 
     uint256 public eraSeconds;
     uint256 public eraOffset;
@@ -34,7 +35,7 @@ abstract contract Era is Ownable {
     }
 
     function _initEraParams() internal virtual onlyInitializing {
-        eraSeconds = 86400;
+        eraSeconds = DEFAULT_ERA_SECONDS;
         eraOffset = block.timestamp / eraSeconds;
     }
 }
