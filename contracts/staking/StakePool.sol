@@ -17,7 +17,10 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IStakePool {
     address public stakeManagerAddress;
     address public stakingAddress;
     uint256 public stakingPoolId;
+    uint256 public stakingPoolMinStakeAmount;
     address public stakeTokenAddress;
+
+    uint256 public pendingBond;
 
     modifier onlyStakeManager() {
         if (stakeManagerAddress != msg.sender) revert CallerNotAllowed();
@@ -41,6 +44,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IStakePool {
         stakingAddress = _stakingAddress;
         stakingPoolId = _stakingPoolId;
         stakeTokenAddress = address(IStaking(stakingAddress).getPoolInfo(stakingPoolId).stakeToken);
+        stakingPoolMinStakeAmount = IStaking(stakingAddress).getPoolInfo(stakingPoolId).minStakeAmount;
 
         _transferOwnership(_owner);
     }
@@ -54,7 +58,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IStakePool {
     }
 
     function getTotalStaked() external view override returns (uint256) {
-        return IStaking(stakingAddress).getUserInfo(stakingPoolId, address(this)).amount;
+        return IStaking(stakingAddress).getUserInfo(stakingPoolId, address(this)).amount + pendingBond;
     }
 
     function getStakingPoolUnbondingSeconds() external view override returns (uint256) {
@@ -64,11 +68,25 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IStakePool {
     // ------------ stakeManager ------------
 
     function stake(uint256 _amount) external override onlyStakeManager {
-        IStaking(stakingAddress).stake(stakingPoolId, _amount);
+        uint256 willBondAmount = pendingBond + _amount;
+        if (willBondAmount < stakingPoolMinStakeAmount) {
+            pendingBond = willBondAmount;
+            return;
+        }
+        pendingBond = 0;
+
+        IStaking(stakingAddress).stake(stakingPoolId, willBondAmount);
     }
 
     function unstake(uint256 _amount) external override onlyStakeManager {
-        IStaking(stakingAddress).unstake(stakingPoolId, _amount);
+        if (_amount <= pendingBond) {
+            pendingBond -= _amount;
+            return;
+        }
+        uint256 willUnbondAmount = _amount - pendingBond;
+        pendingBond = 0;
+
+        IStaking(stakingAddress).unstake(stakingPoolId, willUnbondAmount);
     }
 
     function withdraw() external override onlyStakeManager {
