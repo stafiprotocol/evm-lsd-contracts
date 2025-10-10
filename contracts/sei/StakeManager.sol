@@ -144,6 +144,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     function stakeWithPool(address _poolAddress) public payable {
         // Sei is an Cosmos SDK based chain, it only takes 6 decimals account in staking method,
         // here we do the same for coherence and accuracy.
+        /// forge-lint: disable-next-line(divide-before-multiply)
         uint256 stakeAmount = (msg.value / TWELVE_DECIMALS) * TWELVE_DECIMALS;
 
         if (stakeAmount < minStakeAmount) revert NotEnoughStakeAmount();
@@ -171,6 +172,8 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         if (unstakesOfUser[msg.sender].length() >= UNSTAKE_TIMES_LIMIT) revert UnstakeTimesExceedLimit();
 
         uint256 tokenAmount = (_lsdTokenAmount * rate) / EIGHTEEN_DECIMALS;
+
+        /// forge-lint: disable-next-line(divide-before-multiply)
         tokenAmount = (tokenAmount / TWELVE_DECIMALS) * TWELVE_DECIMALS;
 
         // update pool

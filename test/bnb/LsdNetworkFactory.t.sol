@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.19;
 
-import {Test, console, Vm} from "forge-std/Test.sol";
-import {StakePoolManager} from "../../contracts/base/StakePoolManager.sol";
+import {Test, console} from "forge-std/Test.sol";
 import {StakeManager} from "../../contracts/bnb/StakeManager.sol";
 import {IStakeHub} from "../../contracts/bnb/interfaces/IStakeHub.sol";
 import {StakePool} from "../../contracts/bnb/StakePool.sol";

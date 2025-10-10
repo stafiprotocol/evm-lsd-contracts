@@ -21,7 +21,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
     event WithdrawForStaker(address staker, uint256 amount);
     event ClaimUndelegated(address validator, uint256 number);
 
-    IStakeHub constant stakeHub = IStakeHub(0x0000000000000000000000000000000000002002);
+    IStakeHub constant STAKE_HUB = IStakeHub(0x0000000000000000000000000000000000002002);
 
     address public stakeManagerAddress;
     uint256 public lastUndelegateIndex;
@@ -55,21 +55,21 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
     }
 
     function getDelegated(address _validator) public view override returns (uint256) {
-        IStakeCredit stakeCredit = IStakeCredit(stakeHub.getValidatorCreditContract(_validator));
+        IStakeCredit stakeCredit = IStakeCredit(STAKE_HUB.getValidatorCreditContract(_validator));
         return stakeCredit.getPooledBNB(address(this));
     }
 
     function getTotalDelegated(address[] calldata _validators) external view override returns (uint256) {
         uint256 totalBnbAmount = pendingDelegate;
         for (uint256 i = 0; i < _validators.length; ++i) {
-            IStakeCredit stakeCredit = IStakeCredit(stakeHub.getValidatorCreditContract(_validators[i]));
+            IStakeCredit stakeCredit = IStakeCredit(STAKE_HUB.getValidatorCreditContract(_validators[i]));
             totalBnbAmount += stakeCredit.getPooledBNB(address(this));
         }
         return totalBnbAmount;
     }
 
     function isInvalidValidator(address _validator) external view returns (bool) {
-        (uint256 createdTime, bool jailed,) = stakeHub.getValidatorBasicInfo(_validator);
+        (uint256 createdTime, bool jailed,) = STAKE_HUB.getValidatorBasicInfo(_validator);
         if (createdTime == 0 || jailed) {
             return true;
         }
@@ -87,7 +87,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
         }
         uint256 willDelegateAmount = pendingDelegate + _amount;
 
-        uint256 minDelegationAmount = stakeHub.minDelegationBNBChange();
+        uint256 minDelegationAmount = STAKE_HUB.minDelegationBNBChange();
         if (willDelegateAmount < minDelegationAmount) {
             pendingDelegate = willDelegateAmount;
             return;
@@ -159,7 +159,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
         override
         onlyStakeManager
     {
-        uint256 redelegateFee = (_amount * stakeHub.redelegateFeeRate()) / stakeHub.REDELEGATE_FEE_RATE_BASE();
+        uint256 redelegateFee = (_amount * STAKE_HUB.redelegateFeeRate()) / STAKE_HUB.REDELEGATE_FEE_RATE_BASE();
         if (msg.value < redelegateFee) revert NotEnoughRedelegateFee();
         _govRedelegate(_validatorSrc, _validatorDst, _amount, msg.value);
     }
@@ -181,13 +181,13 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
     }
 
     function _govDelegate(address _validator, uint256 _amount) internal {
-        stakeHub.delegate{value: _amount}(_validator, false);
+        STAKE_HUB.delegate{value: _amount}(_validator, false);
 
         emit Delegate(_validator, _amount);
     }
 
     function _govUndelegate(address _validator, uint256 _amount) internal {
-        IStakeCredit stakeCredit = IStakeCredit(stakeHub.getValidatorCreditContract(_validator));
+        IStakeCredit stakeCredit = IStakeCredit(STAKE_HUB.getValidatorCreditContract(_validator));
         uint256 share = stakeCredit.getSharesByPooledBNB(_amount);
         uint256 balance = stakeCredit.balanceOf(address(this));
         if (stakeCredit.getPooledBNBByShares(share) < _amount && share < balance) {
@@ -197,28 +197,28 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IBnbStakePool {
             share = balance;
         }
 
-        stakeHub.undelegate(_validator, share);
+        STAKE_HUB.undelegate(_validator, share);
 
         emit Undelegate(_validator, _amount);
     }
 
     function _govClaimUndelegated(address _validator) internal {
-        IStakeCredit stakeCredit = IStakeCredit(stakeHub.getValidatorCreditContract(_validator));
+        IStakeCredit stakeCredit = IStakeCredit(STAKE_HUB.getValidatorCreditContract(_validator));
         uint256 number = stakeCredit.claimableUnbondRequest(address(this));
         if (number > 0) {
-            stakeHub.claim(_validator, number);
+            STAKE_HUB.claim(_validator, number);
             emit ClaimUndelegated(_validator, number);
         }
     }
 
     function _govRedelegate(address _srcValidator, address _dstValidator, uint256 _amount, uint256 _fee) internal {
-        IStakeCredit stakeCredit = IStakeCredit(stakeHub.getValidatorCreditContract(_srcValidator));
+        IStakeCredit stakeCredit = IStakeCredit(STAKE_HUB.getValidatorCreditContract(_srcValidator));
         uint256 share = stakeCredit.getSharesByPooledBNB(_amount);
 
-        stakeHub.redelegate(_srcValidator, _dstValidator, share, false);
+        STAKE_HUB.redelegate(_srcValidator, _dstValidator, share, false);
 
         if (_fee > 0) {
-            uint256 minDelegationAmount = stakeHub.minDelegationBNBChange();
+            uint256 minDelegationAmount = STAKE_HUB.minDelegationBNBChange();
             uint256 willDelegateAmount = pendingDelegate + _fee;
             if (willDelegateAmount < minDelegationAmount) {
                 pendingDelegate = willDelegateAmount;

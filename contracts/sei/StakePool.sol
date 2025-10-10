@@ -88,7 +88,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
         if (_validators.length == 0) {
             revert ValidatorsEmpty();
         }
-
+        /// forge-lint: disable-next-line(divide-before-multiply)
         uint256 averageAmount = (willDelegateAmount / _validators.length) * TWELVE_DECIMALS;
         uint256 tail = (willDelegateAmount % _validators.length) * TWELVE_DECIMALS;
 
@@ -195,6 +195,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, ISeiStakePool {
 
         uint256 rewardAmount = postBalance > preBalance ? postBalance - preBalance : 0;
 
+        /// forge-lint: disable-next-line(divide-before-multiply)
         return (rewardAmount / TWELVE_DECIMALS) * TWELVE_DECIMALS;
     }
 

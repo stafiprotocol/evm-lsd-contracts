@@ -7,3 +7,10 @@ solc = "0.8.19"
 evm_version = 'cancun'
 optimizer = true
 optimizer_runs = 200
+
+[lint]
+exclude_lints = [
+    "unaliased-plain-import",
+    "mixed-case-function",
+    "mixed-case-variable",
+]
