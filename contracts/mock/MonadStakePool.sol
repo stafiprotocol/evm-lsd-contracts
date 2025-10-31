@@ -1,14 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.19;
 
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "../base/Ownable.sol";
-import "./interfaces/IMonadStakePool.sol";
-import "./interfaces/IMonadStaking.sol";
+import "../monad/interfaces/IMonadStaking.sol";
 
-contract StakePool is Initializable, UUPSUpgradeable, Ownable, IMonadStakePool {
+contract StakePool {
     // Custom errors to provide more descriptive revert messages.
     error AmountZero();
     error FailedToWithdrawForStaker();
@@ -36,32 +32,11 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IMonadStakePool {
     mapping(uint64 => EnumerableSet.UintSet) _pendingWithdrawals;
     mapping(uint64 => uint8) _nextWithdrawId;
 
-    modifier onlyStakeManager() {
-        if (stakeManagerAddress != msg.sender) revert CallerNotAllowed();
-        _;
-    }
-
-    /// @custom:oz-upgrades-unsafe-allow constructor
-    constructor() {
-        _disableInitializers();
-    }
-
-    function initialize(address _stakeManagerAddress, address _owner) external initializer {
-        if (_stakeManagerAddress == address(0) || _owner == address(0)) revert AddressNotAllowed();
-
-        _transferOwnership(_owner);
-        stakeManagerAddress = _stakeManagerAddress;
-    }
+    constructor() {}
 
     receive() external payable {}
 
-    function _authorizeUpgrade(address _newImplementation) internal override onlyOwner {}
-
     // ------------ getter ------------
-
-    function version() external view returns (uint8) {
-        return _getInitializedVersion();
-    }
 
     function getPendingWithdrawals(uint64 _validator) public view returns (uint8[] memory withdrawals) {
         uint256[] memory vals256 = _pendingWithdrawals[_validator].values();
@@ -72,7 +47,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IMonadStakePool {
         }
     }
 
-    function getDelegated(uint64 _validator) public override returns (uint256) {
+    function getDelegated(uint64 _validator) public returns (uint256) {
         (uint256 stake,,, uint256 deltaStake, uint256 nextDeltaStake,,) =
             MONAD_STAKIING.getDelegator(_validator, address(this));
         return stake + deltaStake + nextDeltaStake;
@@ -83,7 +58,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IMonadStakePool {
         return stake;
     }
 
-    function getTotalDelegated(uint64[] calldata _validators) external override returns (uint256) {
+    function getTotalDelegated(uint64[] calldata _validators) external returns (uint256) {
         uint256 totalAmount;
         for (uint256 i = 0; i < _validators.length; ++i) {
             totalAmount += getDelegated(_validators[i]);
@@ -92,86 +67,6 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IMonadStakePool {
     }
 
     // ------------ stakeManager ------------
-
-    function delegateMulti(uint64[] memory _validators, uint256 _amount) external override onlyStakeManager {
-        if (_amount == 0) {
-            revert AmountZero();
-        }
-        if (_validators.length == 0) {
-            revert ValidatorsEmpty();
-        }
-
-        uint256 averageAmount = _amount / _validators.length;
-        if (averageAmount == 0) {
-            _govDelegate(_validators[0], _amount);
-
-            return;
-        }
-
-        uint256 tail = _amount % _validators.length;
-        for (uint256 i = 0; i < _validators.length; ++i) {
-            uint256 amount = i == 0 ? averageAmount + tail : averageAmount;
-
-            _govDelegate(_validators[i], amount);
-        }
-    }
-
-    function undelegateMulti(uint64[] memory _validators, uint256 _amount) external override onlyStakeManager {
-        if (_amount == 0) {
-            revert AmountZero();
-        }
-        if (_validators.length == 0) {
-            revert ValidatorsEmpty();
-        }
-
-        uint256 needUndelegate = _amount;
-
-        uint256 totalCycle = 0;
-        for (
-            uint256 i = (lastUndelegateIndex + 1) % _validators.length;
-            totalCycle < _validators.length;
-            (i = (i + 1) % _validators.length, ++totalCycle)
-        ) {
-            if (needUndelegate == 0) {
-                break;
-            }
-
-            uint256 govDelegated = getActived(_validators[i]);
-
-            uint256 willUndelegate = needUndelegate < govDelegated ? needUndelegate : govDelegated;
-
-            _govUndelegate(_validators[i], willUndelegate);
-            needUndelegate -= willUndelegate;
-
-            lastUndelegateIndex = i;
-        }
-
-        if (needUndelegate > 0) {
-            revert NotEnoughAmountToUndelegate();
-        }
-    }
-
-    function withdrawMulti(uint64[] memory _validators) external override onlyStakeManager {
-        for (uint256 i = 0; i < _validators.length; ++i) {
-            _govWithdraw(_validators[i]);
-        }
-    }
-
-    function compoundMulti(uint64[] memory _validators) external override onlyStakeManager {
-        for (uint256 i = 0; i < _validators.length; ++i) {
-            _govCompound(_validators[i]);
-        }
-    }
-
-    function withdrawForStaker(address _staker, uint256 _amount) external override onlyStakeManager {
-        if (_staker == address(0)) revert AddressNotAllowed();
-        if (_amount > 0) {
-            (bool result,) = _staker.call{value: _amount}("");
-            if (!result) revert FailedToWithdrawForStaker();
-
-            emit WithdrawForStaker(_staker, _amount);
-        }
-    }
 
     function _govDelegate(uint64 _validator, uint256 _amount) internal {
         bool success = MONAD_STAKIING.delegate{value: _amount}(_validator);
@@ -218,5 +113,27 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IMonadStakePool {
 
         bool success = MONAD_STAKIING.compound(_validator);
         if (!success) revert FailedCompound();
+    }
+
+    function TestDelegateAndGet(uint64 _validator) public payable {
+        bool success = MONAD_STAKIING.delegate{value: msg.value}(_validator);
+        if (!success) revert FailedDelegate();
+
+        emit Delegate(_validator, msg.value);
+
+        uint256 delegated = getDelegated(_validator);
+
+        emit Delegate(_validator, delegated);
+    }
+
+    function TestDelegate(uint64 _validator) public payable {
+        bool success = MONAD_STAKIING.delegate{value: msg.value}(_validator);
+        if (!success) revert FailedDelegate();
+
+        emit Delegate(_validator, msg.value);
+    }
+
+    function TestCompound(uint64 _validator) public {
+        _govCompound(_validator);
     }
 }
