@@ -110,19 +110,19 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
             address poolAddress = poolList[i];
 
             uint256[] memory validators = getValidatorIdsOf(poolAddress);
-
+            uint256 totalStaked = 0;
             for (uint256 j = 0; j < validators.length; ++j) {
-                uint256 totalStaked = IMaticStakePool(poolAddress).getDelegated(validators[j]);
-                if (totalStaked > 0) {
-                    IMaticStakePool(poolAddress).undelegate(validators[j], totalStaked);
-                    emit Undelegate(poolAddress, validators[j], totalStaked);
+                uint256 stakedAmount = IMaticStakePool(poolAddress).getDelegated(validators[j]);
+                if (stakedAmount > 0) {
+                    IMaticStakePool(poolAddress).undelegate(validators[j], stakedAmount);
+                    emit Undelegate(poolAddress, validators[j], stakedAmount);
                 }
+                totalStaked = totalStaked + stakedAmount;
+            }
+            if (totalStaked > 0) {
+                IMaticStakePool(poolAddress).approveForStakeManager(stakeTokenAddress, totalStaked);
             }
         }
-    }
-
-    function approve(address _poolAddress, uint256 _amount) external onlyOwner {
-        IMaticStakePool(_poolAddress).approveForStakeManager(stakeTokenAddress, _amount);
     }
 
     // ----- staker operation
