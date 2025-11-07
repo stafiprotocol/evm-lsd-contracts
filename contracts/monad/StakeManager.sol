@@ -190,6 +190,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
             if (!unstakesOfUser[msg.sender].remove(unstakeIndex)) revert AlreadyWithdrawed();
 
             totalWithdrawAmount = totalWithdrawAmount + unstakeInfo.amount;
+            // forge-lint: disable-next-line(unsafe-typecast)
             emitUnstakeIndexList[i] = int256(unstakeIndex);
         }
 
