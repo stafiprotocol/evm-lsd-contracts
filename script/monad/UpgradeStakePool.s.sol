@@ -6,7 +6,7 @@ import {StakePool} from "../../contracts/monad/StakePool.sol";
 
 // export PRIVATE_KEY=0xXXXXX
 // export STAKE_POOL_PROXY=0xXXXXX
-// forge script script/monad/Upgrade.s.sol --rpc-url https://rpc-testnet.monadinfra.com --broadcast
+// forge script script/monad/UpgradeStakePool.s.sol --rpc-url https://rpc-testnet.monadinfra.com --broadcast
 
 interface IUpgradeable {
     function upgradeTo(address newImplementation) external;

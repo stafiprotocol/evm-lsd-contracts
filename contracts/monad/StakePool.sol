@@ -202,7 +202,7 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IMonadStakePool {
         (uint64 epoch,) = MONAD_STAKIING.getEpoch();
         for (uint256 i = 0; i < withdrawals.length; i++) {
             (,, uint64 withdrawEpoch) = MONAD_STAKIING.getWithdrawalRequest(_validator, address(this), withdrawals[i]);
-            if (withdrawEpoch + 2 + WITHDRAWAL_DELAY >= epoch) {
+            if (withdrawEpoch + 2 + WITHDRAWAL_DELAY <= epoch) {
                 bool success = MONAD_STAKIING.withdraw(_validator, withdrawals[i]);
                 if (!success) revert FailedWithdraw();
 
