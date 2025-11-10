@@ -104,12 +104,25 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         emit AdminWithdraw(msg.sender, _poolAddress, _amount);
     }
 
+    function unstakeClaimTokens(address _poolAddress) external onlyOwner {
+        uint256[] memory validators = getValidatorIdsOf(_poolAddress);
+        for (uint256 j = 0; j < validators.length; ++j) {
+            uint256 oldClaimedNonce = maxClaimedNonceOf[_poolAddress][validators[j]];
+            uint256 newClaimedNonce = IMaticStakePool(_poolAddress).unstakeClaimTokens(validators[j], oldClaimedNonce);
+            maxClaimedNonceOf[_poolAddress][validators[j]] = newClaimedNonce;
+            if (newClaimedNonce > oldClaimedNonce) {
+                emit NewClaimedNonce(_poolAddress, validators[j], newClaimedNonce);
+            }
+        }
+    }
+
     function _manualUndelegateAll() internal {
         address[] memory poolList = getBondedPools();
         for (uint256 i = 0; i < poolList.length; ++i) {
             address poolAddress = poolList[i];
 
             uint256[] memory validators = getValidatorIdsOf(poolAddress);
+            IMaticStakePool(poolAddress).checkAndWithdrawRewards(validators);
             uint256 totalStaked = 0;
             for (uint256 j = 0; j < validators.length; ++j) {
                 uint256 stakedAmount = IMaticStakePool(poolAddress).getDelegated(validators[j]);
