@@ -35,7 +35,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
     event Unstake(
         address staker, address poolAddress, uint256 tokenAmount, uint256 lsdTokenAmount, uint256 unstakeIndex
     );
-    event Withdraw(address staker, address poolAddress, uint256 tokenAmount, int256[] unstakeIndexList);
+    event Withdraw(address staker, address poolAddress, uint256 tokenAmount, uint256[] unstakeIndexList);
     event ExecuteNewEra(uint256 indexed era, uint256 rate);
     event Delegate(address pool, uint64[] validators, uint256 amount);
     event Undelegate(address pool, uint64[] validators, uint256 amount);
@@ -58,6 +58,7 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         _initManagerParams(_lsdToken, _poolAddress, _factoryAddress, 2, 0);
 
         minStakeAmount = 1e12;
+        nextUnstakeIndex = 1;
 
         if (_validators.length == 0) {
             revert ValidatorsEmpty();
@@ -176,21 +177,21 @@ contract StakeManager is Initializable, Manager, UUPSUpgradeable {
         uint256 totalWithdrawAmount;
         uint256[] memory unstakeIndexList = getUnstakeIndexListOf(msg.sender);
         uint256 length = unstakesOfUser[msg.sender].length();
-        int256[] memory emitUnstakeIndexList = new int256[](length);
+        uint256[] memory emitUnstakeIndexList = new uint256[](length);
 
         uint256 curEra = currentEra();
         for (uint256 i = 0; i < length; ++i) {
             uint256 unstakeIndex = unstakeIndexList[i];
             UnstakeInfo memory unstakeInfo = unstakeAtIndex[unstakeIndex];
             if (unstakeInfo.era + unbondingDuration > curEra || unstakeInfo.pool != _poolAddress) {
-                emitUnstakeIndexList[i] = -1;
+                emitUnstakeIndexList[i] = 0;
                 continue;
             }
 
             if (!unstakesOfUser[msg.sender].remove(unstakeIndex)) revert AlreadyWithdrawed();
 
             totalWithdrawAmount = totalWithdrawAmount + unstakeInfo.amount;
-            emitUnstakeIndexList[i] = int256(unstakeIndex);
+            emitUnstakeIndexList[i] = unstakeIndex;
         }
 
         if (totalWithdrawAmount <= 0) revert ZeroWithdrawAmount();
