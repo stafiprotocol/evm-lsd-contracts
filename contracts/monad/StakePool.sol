@@ -126,24 +126,18 @@ contract StakePool is Initializable, UUPSUpgradeable, Ownable, IMonadStakePool {
 
         uint256 needUndelegate = _amount;
 
-        uint256 totalCycle = 0;
-        for (
-            uint256 i = (lastUndelegateIndex + 1) % _validators.length;
-            totalCycle < _validators.length;
-            (i = (i + 1) % _validators.length, ++totalCycle)
-        ) {
-            if (needUndelegate == 0) {
-                break;
-            }
+        for (uint256 i = 1; i <= _validators.length && needUndelegate > 0; ++i) {
+            uint256 valIndex = (lastUndelegateIndex + i) % _validators.length;
+            uint64 validator = _validators[valIndex];
 
-            uint256 govDelegated = getActived(_validators[i]);
+            uint256 govDelegated = getActived(validator);
 
             uint256 willUndelegate = needUndelegate < govDelegated ? needUndelegate : govDelegated;
 
-            _govUndelegate(_validators[i], willUndelegate);
+            _govUndelegate(validator, willUndelegate);
             needUndelegate -= willUndelegate;
 
-            lastUndelegateIndex = i;
+            lastUndelegateIndex = valIndex;
         }
 
         if (needUndelegate > 0) {
