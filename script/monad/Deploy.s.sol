@@ -21,11 +21,9 @@ contract DeployScript is Script {
         StakeManager stakeManagerLogic = new StakeManager();
         LsdNetworkFactory lsdNetworkFactoryLogic = new LsdNetworkFactory();
 
-        ERC1967Proxy lsdNetworkFactoryProxy = new ERC1967Proxy(address(lsdNetworkFactoryLogic), "");
+        bytes memory data = abi.encodeWithSelector(LsdNetworkFactory.initialize.selector, admin, address(stakeManagerLogic), address(stakePoolLogic));
 
-        LsdNetworkFactory(address(lsdNetworkFactoryProxy)).initialize(
-            admin, address(stakeManagerLogic), address(stakePoolLogic)
-        );
+        ERC1967Proxy lsdNetworkFactoryProxy = new ERC1967Proxy(address(lsdNetworkFactoryLogic), data);
 
         console.log("LsdNetworkFactory Proxy deployed at:", address(lsdNetworkFactoryProxy));
 
